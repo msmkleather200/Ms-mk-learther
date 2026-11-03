@@ -20,7 +20,7 @@ h2.t{padding:6px 14px;font-size:17px}
 #grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 12px}
 .card{background:#fff;border-radius:10px;overflow:hidden;cursor:pointer;border:1px solid #e6e0d8}
 .im{height:130px;display:flex;align-items:center;justify-content:center;font-size:56px;background:linear-gradient(135deg,#3a2012,var(--br))}
-.im.big{height:180px;font-size:80px;border-radius:10px;margin-bottom:10px}
+.im img{width:100%;height:100%;object-fit:cover}.im.big{height:180px;font-size:80px;border-radius:10px;margin-bottom:10px}
 .in{padding:8px 10px 10px}.nm{font-size:13px;height:36px;overflow:hidden}
 .pr{color:var(--br);font-size:16px}s{color:#999;font-size:12px}.off{background:#fde8c4;color:#a35a00;font-size:11px;padding:1px 5px;border-radius:4px}
 nav{position:fixed;bottom:0;left:0;right:0;background:var(--k);display:flex;border-top:2px solid var(--g);z-index:5}
@@ -61,7 +61,8 @@ auth.onAuthStateChanged(async u=>{user=u;prof=null;
  if(u){try{const d=await db.collection('users').doc(u.uid).get();prof=d.exists?d.data():null}catch(e){}}
  ui();if(u&&pend){const f=pend;pend=null;closeM();f()}})}catch(e){console.error(e)}
 
-const P=[
+let ST={title:'Premium Quality Leather Products',sub:'মানিব্যাগ · জুতা · ব্যাগ · বেল্ট। স্টাইল, টেকসই আর ভরসা।',dhaka:80,out:130};
+let P=[
 {id:1,n:'প্রিমিয়াম লেদার মানিব্যাগ',c:'wallet',p:550,o:850,e:'👛',col:['বাদামি','কালো']},
 {id:2,n:'জেনুইন লেদার বেল্ট',c:'belt',p:450,o:700,e:'🧵',col:['কালো','বাদামি']},
 {id:3,n:'ফরমাল লেদার লোফার জুতা',c:'shoe',p:1290,o:1890,e:'👞',col:['কালো','চকোলেট'],sz:[40,41,42,43]},
@@ -76,17 +77,17 @@ const er=e=>ER[e.code]||e.message;
 
 function render(){const l=P.filter(x=>(cat=='all'||x.c==cat)&&x.n.includes(q));
 $('#cats').innerHTML=C.map(([k,t])=>`<span class="chip ${k==cat?'on':''}" onclick="cat='${k}';render()">${t}</span>`).join('');
-$('#grid').innerHTML=l.map(x=>`<div class="card" onclick="showP(${x.id})"><div class="im">${x.e}</div><div class="in"><div class="nm">${x.n}</div><b class="pr">৳${bn(x.p)}</b> <s>৳${bn(x.o)}</s> <span class="off">-${bn(Math.round(100-x.p*100/x.o))}%</span></div></div>`).join('')||'<p style="padding:14px">কোনো পণ্য পাওয়া যায়নি।</p>'}
+$('#grid').innerHTML=l.map(x=>`<div class="card" onclick="showP('${x.id}')"><div class="im">${x.img?`<img src="${x.img}">`:(x.e||'👜')}</div><div class="in"><div class="nm">${x.n}</div><b class="pr">৳${bn(x.p)}</b> <s>৳${bn(x.o)}</s> <span class="off">-${bn(Math.round(100-x.p*100/x.o))}%</span></div></div>`).join('')||'<p style="padding:14px">কোনো পণ্য পাওয়া যায়নি।</p>'}
 function M(h){$('#mb').innerHTML='<button class="x" onclick="closeM()">✕</button>'+h;$('#ov').style.display='flex'}
 function closeM(){$('#ov').style.display='none'}
 function ui(){$('#al').textContent=user?'অ্যাকাউন্ট':'লগইন';const n=cart.reduce((s,i)=>s+i.qty,0);$('#cn').textContent=bn(n);$('#cn').style.display=n?'block':'none'}
 function save(){try{localStorage.setItem('mkcart',JSON.stringify(cart))}catch(e){}ui()}
 
-function showP(id,keep){const x=P.find(a=>a.id==id);if(!keep)sel={id,col:x.col[0],sz:x.sz?x.sz[0]:'',qty:1};
-M(`<div class="im big">${x.e}</div><h3>${x.n}</h3><p><b class="pr">৳${bn(x.p)}</b> <s>৳${bn(x.o)}</s></p>
-<p class="lb">রং</p>${x.col.map(c=>`<span class="chip ${c==sel.col?'on':''}" onclick="sel.col='${c}';showP(${id},1)">${c}</span>`).join('')}
-${x.sz?`<p class="lb">সাইজ</p>${x.sz.map(s=>`<span class="chip ${s==sel.sz?'on':''}" onclick="sel.sz=${s};showP(${id},1)">${bn(s)}</span>`).join('')}`:''}
-<p class="lb">পরিমাণ</p><div class="q"><button onclick="sel.qty=Math.max(1,sel.qty-1);showP(${id},1)">−</button> <b>${bn(sel.qty)}</b> <button onclick="sel.qty++;showP(${id},1)">+</button></div>
+function showP(id,keep){const x=P.find(a=>a.id==id);if(!keep)sel={id,col:x.col[0],sz:x.sz&&x.sz.length?x.sz[0]:'',qty:1};
+M(`<div class="im big">${x.img?`<img src="${x.img}">`:(x.e||'👜')}</div><h3>${x.n}</h3><p><b class="pr">৳${bn(x.p)}</b> <s>৳${bn(x.o)}</s></p>
+<p class="lb">রং</p>${x.col.map(c=>`<span class="chip ${c==sel.col?'on':''}" onclick="sel.col='${c}';showP('${id}',1)">${c}</span>`).join('')}
+${x.sz&&x.sz.length?`<p class="lb">সাইজ</p>${x.sz.map(s=>`<span class="chip ${s==sel.sz?'on':''}" onclick="sel.sz='${s}';showP('${id}',1)">${bn(s)}</span>`).join('')}`:''}
+<p class="lb">পরিমাণ</p><div class="q"><button onclick="sel.qty=Math.max(1,sel.qty-1);showP('${id}',1)">−</button> <b>${bn(sel.qty)}</b> <button onclick="sel.qty++;showP('${id}',1)">+</button></div>
 <button class="btn g" onclick="checkout([item()])">এখনই কিনুন</button><button class="btn" onclick="addCart()">কার্টে যোগ করুন</button>`)}
 function item(){const x=P.find(a=>a.id==sel.id);return{id:x.id,n:x.n,p:x.p,col:sel.col,sz:sel.sz,qty:sel.qty}}
 function addCart(){const i=item(),f=cart.find(a=>a.id==i.id&&a.col==i.col&&a.sz==i.sz);f?f.qty+=i.qty:cart.push(i);save();closeM()}
@@ -110,7 +111,7 @@ M(`<h3>ডেলিভারির ঠিকানা</h3>
 <div class="row"><span>পণ্যের দাম</span><span>৳${bn(t)}</span></div><div class="row"><span>ডেলিভারি চার্জ</span><span id="dc">জেলা বাছুন</span></div><div class="row"><b>সর্বমোট</b><b id="tt">৳${bn(t)}</b></div>
 <p class="er" id="er"></p><button class="btn g" id="ob">অর্ডার কনফার্ম করুন</button>`);
 window._it=items;window._fc=fromCart;$('#ob').onclick=place}
-function dch(){const d=$('#cd').value;return d?(d=='ঢাকা'?80:130):0}
+function dch(){const d=$('#cd').value;return d?(d=='ঢাকা'?ST.dhaka:ST.out):0}
 function tot(t){const c=dch();$('#dc').textContent='৳'+bn(c);$('#tt').textContent='৳'+bn(t+c)}
 function pay(v){if(v!='cod'){$('#pm').textContent='সার্ভারে সমস্যা হচ্ছে। সমস্যা ঠিক হলে আপনাকে অবশ্যই জানানো হবে।';document.querySelector('input[value=cod]').checked=true}else $('#pm').textContent=''}
 async function place(){const v=i=>$('#'+i).value.trim(),e=$('#er');
@@ -138,6 +139,8 @@ async function forgot(){try{await auth.sendPasswordResetEmail(g('em'));$('#er').
 async function google(){try{const r=await auth.signInWithPopup(new firebase.auth.GoogleAuthProvider());
 await db.collection('users').doc(r.user.uid).set({name:r.user.displayName||'',email:r.user.email,createdAt:firebase.firestore.FieldValue.serverTimestamp()},{merge:true});closeM()}catch(e){err(er(e))}}
 function acc(){if(!user)return authM('login');M(`<h3>আমার অ্যাকাউন্ট</h3><p style="margin:8px 0">${user.displayName||''}<br><small>${user.email}</small></p><button class="btn w" onclick="auth.signOut();closeM()">লগআউট</button>`)}
-render();ui();
+async function loadP(){try{const s=await db.collection('products').get(),l=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.active!==false);
+if(l.length)P=l.sort((a,b)=>(b.t||0)-(a.t||0));
+const t=await db.collection('settings').doc('site').get();if(t.exists){ST={...ST,...t.data()};$('.hero h1').textContent=ST.title;$('.hero p').textContent=ST.sub}}catch(e){console.error(e)}render()}
+render();ui();if(db)loadP();
 </script></body></html>
-w
