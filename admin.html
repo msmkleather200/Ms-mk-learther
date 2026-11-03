@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="bn"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>অ্যাডমিন | M/S, M.K. Leather</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Noto Sans Bengali",system-ui,sans-serif;background:#f5f3f0;color:#222}
+header{background:#0a0a0a;color:#f3c94a;padding:12px 14px;border-bottom:2px solid #d4a017;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
+header button{background:none;border:1px solid #d4a017;color:#f3c94a;border-radius:6px;padding:5px 10px}
+main{max-width:760px;margin:0 auto;padding:12px}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tabs button{flex:1;padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:14px}
+.tabs button.on{background:#0a0a0a;color:#f3c94a;border-color:#0a0a0a}
+.c{background:#fff;border:1px solid #e3ddd4;border-radius:10px;padding:12px;margin-bottom:10px;font-size:14px;line-height:1.6}
+.rw{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.tag{background:#fde8c4;color:#8a4b00;padding:2px 10px;border-radius:12px;font-size:12px}
+.it{background:#f7f4ef;padding:6px 8px;border-radius:6px;margin:6px 0;font-size:13px}
+.bt{display:flex;gap:6px;flex-wrap:wrap;margin-top:8px}
+.b,.bt button,.bt select,.chips button{padding:8px 12px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:13px;font-family:inherit}
+.b.g,.bt .ok{background:#d4a017;color:#000;border-color:#d4a017;font-weight:600}
+.bt .no{color:#c00}.chips{display:flex;gap:6px;overflow-x:auto;margin-bottom:10px}
+.chips button.on{background:#0a0a0a;color:#f3c94a}
+.th{width:56px;height:56px;border-radius:8px;object-fit:cover;background:#3a2012;display:flex;align-items:center;justify-content:center;color:#d4a017;font-size:11px;flex-shrink:0}
+label{display:block;font-size:13px;color:#555;margin:8px 0 4px}
+input,select,textarea{width:100%;padding:10px;border:1px solid #ccc;border-radius:8px;font-size:14px;font-family:inherit}
+input[type=checkbox]{width:auto}
+#ov{display:none;position:fixed;inset:0;background:#000a;z-index:10;align-items:flex-end;justify-content:center}
+#mb{background:#fff;width:100%;max-width:560px;max-height:94vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px}
+.mid{text-align:center;padding:40px 14px}
+</style></head><body>
+<header><b>M/S, M.K. Leather · অ্যাডমিন</b><button id="lo" style="display:none" onclick="auth.signOut()">লগআউট</button></header>
+<main id="app"></main>
+<div id="ov" onclick="if(event.target==this)closeM()"><div id="mb"></div></div>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script>
+const FC={apiKey:"AIzaSyBmnEuKvp9igYBD02K7WjwAvcOjQ_yk1pg",authDomain:"msmklearther.firebaseapp.com",projectId:"msmklearther",storageBucket:"msmklearther.firebasestorage.app",messagingSenderId:"573825703414",appId:"1:573825703414:web:dc33c890e3feca331fbbd7",measurementId:"G-W13VT18VZ5"};
+const ADMINS=['YOUR_EMAIL@gmail.com'];
+const $=s=>document.querySelector(s),g=i=>$('#'+i).value.trim();
+const E=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
+const S=['নতুন','অ্যাপ্রুভড','শিপড','ডেলিভারড','বাতিল'],CT={wallet:'মানিব্যাগ',shoe:'জুতা',bag:'ব্যাগ',belt:'বেল্ট'};
+firebase.initializeApp(FC);const auth=firebase.auth(),db=firebase.firestore();
+let un,OR=[],PR=[],flt='সব',IM='';
+const A=$('#app');
+function M(h){$('#mb').innerHTML=h;$('#ov').style.display='flex'}function closeM(){$('#ov').style.display='none'}
+auth.onAuthStateChanged(u=>{un&&un();$('#lo').style.display=u?'block':'none';
+ if(!u)A.innerHTML='<div class="mid"><p style="margin-bottom:14px">অ্যাডমিন হিসেবে গুগল দিয়ে লগইন করুন।</p><button class="b g" onclick="auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message))">গুগল দিয়ে লগইন</button></div>';
+ else if(!ADMINS.includes(u.email))A.innerHTML=`<div class="mid"><p><b>${E(u.email)}</b> অ্যাডমিন তালিকায় নেই। সঠিক গুগল অ্যাকাউন্ট দিয়ে লগইন করুন।</p></div>`;
+ else shell()});
+function shell(){A.innerHTML='<div class="tabs"><button id="t1" onclick="tab(1)">অর্ডার</button><button id="t2" onclick="tab(2)">পণ্য</button><button id="t3" onclick="tab(3)">সাইট সেটিংস</button></div><div id="v"></div>';tab(1)}
+function tab(n){un&&un();[1,2,3].forEach(i=>$('#t'+i).className=i==n?'on':'');[0,orders,prods,sets][n]()}
+
+/* অর্ডার */
+function orders(){$('#v').innerHTML='<div class="chips" id="fl"></div><div id="ol"></div>';
+un=db.collection('orders').orderBy('createdAt','desc').onSnapshot(s=>{OR=s.docs.map(d=>({id:d.id,...d.data()}));drawO()},e=>$('#ol').textContent=e.message)}
+function drawO(){const l=OR.filter(o=>flt=='সব'||o.status==flt);
+$('#fl').innerHTML=['সব',...S].map(s=>`<button class="${s==flt?'on':''}" onclick="flt='${s}';drawO()">${s}${s=='সব'?'':' ('+OR.filter(o=>o.status==s).length+')'}</button>`).join('');
+$('#ol').innerHTML=l.map(o=>`<div class="c"><div class="rw"><b>#${E(o.id.slice(0,8).toUpperCase())}</b><span class="tag">${E(o.status)}</span></div>
+<small>${o.createdAt?o.createdAt.toDate().toLocaleString('bn-BD'):''}</small>
+<div>${E(o.name)} · <a href="tel:${E(o.phone)}">${E(o.phone)}</a><br><small>${E(o.email)}</small></div>
+<div>${E(o.district)}, ${E(o.area)}<br>${E(o.address)}</div>
+<div class="it">${(o.items||[]).map(i=>`${E(i.n)} (${E(i.col)}${i.sz?', সাইজ '+E(i.sz):''}) × ${E(i.qty)}`).join('<br>')}</div>
+<b>মোট ৳${E(o.total)}</b> <small>(ডেলিভারি ৳${E(o.delivery)} সহ, ${o.payment=='cod'?'ক্যাশ অন ডেলিভারি':E(o.payment)})</small>
+<div class="bt"><button class="ok" onclick="st('${o.id}','অ্যাপ্রুভড')">অ্যাপ্রুভ</button><select onchange="st('${o.id}',this.value)">${S.map(s=>`<option ${s==o.status?'selected':''}>${s}</option>`).join('')}</select><button class="no" onclick="st('${o.id}','বাতিল')">বাতিল</button><button onclick="delO('${o.id}')">মুছুন</button></div></div>`).join('')||'<p class="mid">কোনো অর্ডার নেই।</p>'}
+const st=(id,s)=>db.collection('orders').doc(id).update({status:s});
+const delO=id=>confirm('অর্ডারটি স্থায়ীভাবে মুছবেন?')&&db.collection('orders').doc(id).delete();
+
+/* পণ্য */
+function prods(){$('#v').innerHTML='<button class="b g" onclick="pf()">+ নতুন পণ্য</button><div id="pl" style="margin-top:10px"></div>';
+un=db.collection('products').onSnapshot(s=>{PR=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.t||0)-(a.t||0));
+$('#pl').innerHTML=PR.map(p=>`<div class="c"><div class="rw" style="justify-content:flex-start">${p.img?`<img class="th" src="${p.img}">`:'<div class="th">ছবি নেই</div>'}<div style="flex:1"><b>${E(p.n)}</b><br>${CT[p.c]||''} · ৳${E(p.p)} <s style="color:#999">৳${E(p.o)}</s><br><span class="tag">${p.active===false?'লুকানো':'চালু'}</span></div></div>
+<div class="bt"><button onclick="pf('${p.id}')">এডিট</button><button onclick="db.collection('products').doc('${p.id}').update({active:${p.active===false}})">${p.active===false?'দেখান':'লুকান'}</button><button class="no" onclick="confirm('পণ্যটি মুছবেন?')&&db.collection('products').doc('${p.id}').delete()">মুছুন</button></div></div>`).join('')||'<p class="mid">এখনো কোনো পণ্য নেই। "নতুন পণ্য" চাপুন।</p>'})}
+function pf(id){const p=PR.find(x=>x.id==id)||{};IM=p.img||'';
+M(`<h3>${id?'পণ্য এডিট':'নতুন পণ্য'}</h3>
+<label>পণ্যের ছবি</label><img id="pv" class="th" style="width:100px;height:100px" ${IM?`src="${IM}"`:''}><input type="file" accept="image/*" onchange="pick(this.files[0])" style="margin-top:6px">
+<label>নাম</label><input id="n" value="${E(p.n)}">
+<label>ক্যাটাগরি</label><select id="c">${Object.entries(CT).map(([k,v])=>`<option value="${k}" ${p.c==k?'selected':''}>${v}</option>`).join('')}</select>
+<label>বিক্রয় মূল্য (৳)</label><input id="p" type="number" value="${p.p||''}">
+<label>আগের দাম (৳, ঐচ্ছিক)</label><input id="o" type="number" value="${p.o||''}">
+<label>রং (কমা দিয়ে লিখুন)</label><input id="co" value="${E((p.col||[]).join(', '))}" placeholder="কালো, বাদামি">
+<label>সাইজ (কমা দিয়ে, না থাকলে ফাঁকা)</label><input id="sz" value="${E((p.sz||[]).join(', '))}" placeholder="40, 41, 42, 43">
+<label><input type="checkbox" id="ac" ${p.active===false?'':'checked'}> সাইটে দেখান</label>
+<div class="bt"><button class="b g" onclick="sp('${id||''}')">সেভ করুন</button><button class="b" onclick="closeM()">বাতিল</button></div>`)}
+function pick(f){if(!f)return;const i=new Image;i.onload=()=>{const s=Math.min(1,700/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);IM=c.toDataURL('image/jpeg',.72);$('#pv').src=IM};i.src=URL.createObjectURL(f)}
+async function sp(id){const l=x=>g(x).split(',').map(a=>a.trim()).filter(Boolean),pr=+g('p');
+const o={n:g('n'),c:g('c'),p:pr,o:+g('o')||pr,col:l('co'),sz:l('sz'),active:$('#ac').checked,img:IM};
+if(!o.n||!pr||!o.col.length){alert('নাম, দাম আর অন্তত একটি রং দিন।');return}
+try{id?await db.collection('products').doc(id).update(o):await db.collection('products').add({...o,t:Date.now()});closeM()}catch(e){alert('সেভ হয়নি: '+e.message)}}
+
+/* সাইট সেটিংস */
+async function sets(){$('#v').innerHTML='<div class="c">লোড হচ্ছে...</div>';
+const d=await db.collection('settings').doc('site').get(),s={title:'Premium Quality Leather Products',sub:'মানিব্যাগ · জুতা · ব্যাগ · বেল্ট। স্টাইল, টেকসই আর ভরসা।',dhaka:80,out:130,...(d.exists?d.data():{})};
+$('#v').innerHTML=`<div class="c"><label>হোম পেজের বড় লেখা</label><input id="st1" value="${E(s.title)}"><label>ছোট লেখা</label><input id="st2" value="${E(s.sub)}">
+<label>ডেলিভারি চার্জ, ঢাকা (৳)</label><input id="st3" type="number" value="${s.dhaka}"><label>ডেলিভারি চার্জ, ঢাকার বাইরে (৳)</label><input id="st4" type="number" value="${s.out}">
+<div class="bt"><button class="b g" onclick="ss()">সেভ করুন</button></div></div>`}
+async function ss(){try{await db.collection('settings').doc('site').set({title:g('st1'),sub:g('st2'),dhaka:+g('st3'),out:+g('st4')});alert('সেভ হয়েছে।')}catch(e){alert('সেভ হয়নি: '+e.message)}}
+</script></body></html>
