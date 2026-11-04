@@ -9,7 +9,7 @@ header{background:#0a0a0a;color:#f3c94a;padding:12px 14px;border-bottom:2px soli
 header button{background:none;border:1px solid #d4a017;color:#f3c94a;border-radius:6px;padding:5px 10px}
 main{max-width:760px;margin:0 auto;padding:12px}
 .tabs{display:flex;gap:6px;margin-bottom:12px}
-.tabs button{flex:1;padding:10px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:14px}
+.tabs button{flex:1;padding:10px 4px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:14px}
 .tabs button.on{background:#0a0a0a;color:#f3c94a;border-color:#0a0a0a}
 .c{background:#fff;border:1px solid #e3ddd4;border-radius:10px;padding:12px;margin-bottom:10px;font-size:14px;line-height:1.6}
 .rw{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -27,6 +27,10 @@ input[type=checkbox]{width:auto}
 #ov{display:none;position:fixed;inset:0;background:#000a;z-index:10;align-items:flex-end;justify-content:center}
 #mb{background:#fff;width:100%;max-width:560px;max-height:94vh;overflow:auto;border-radius:16px 16px 0 0;padding:16px}
 .mid{text-align:center;padding:40px 14px}
+.ma,.mu{padding:8px 12px;margin:6px 0;font-size:14px;white-space:pre-wrap;word-break:break-word}
+.ma{background:#f3c94a;border-radius:14px 14px 4px 14px;margin-left:48px}
+.mu{background:#fff;border:1px solid #e3ddd4;border-radius:14px 14px 14px 4px;margin-right:48px}
+.dot{display:inline-block;width:10px;height:10px;border-radius:50%;background:#e11;margin-left:6px}
 </style></head><body>
 <header><b>M/S, M.K. Leather · অ্যাডমিন</b><button id="lo" style="display:none" onclick="auth.signOut()">লগআউট</button></header>
 <main id="app"></main>
@@ -39,17 +43,17 @@ const FC={apiKey:"AIzaSyBmnEuKvp9igYBD02K7WjwAvcOjQ_yk1pg",authDomain:"msmkleart
 const ADMINS=['msmkleather200@gmail.com'];
 const $=s=>document.querySelector(s),g=i=>$('#'+i).value.trim();
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
-const S=['নতুন','অ্যাপ্রুভড','শিপড','ডেলিভারড','বাতিল'],CT={wallet:'মানিব্যাগ',shoe:'জুতা',bag:'ব্যাগ',belt:'বেল্ট'};
+const S=['নতুন','কনফার্মড','প্রস্তুত হচ্ছে','পাঠানো হয়েছে','ডেলিভারি সম্পন্ন','বাতিল'],CT={wallet:'মানিব্যাগ',shoe:'জুতা',bag:'ব্যাগ',belt:'বেল্ট'};
 firebase.initializeApp(FC);const auth=firebase.auth(),db=firebase.firestore();
 let un,OR=[],PR=[],flt='সব',IM='';
 const A=$('#app');
-function M(h){$('#mb').innerHTML=h;$('#ov').style.display='flex'}function closeM(){$('#ov').style.display='none'}
+let cun=null;function M(h){$('#mb').innerHTML=h;$('#ov').style.display='flex'}function closeM(){cun&&cun();cun=null;$('#ov').style.display='none'}
 auth.onAuthStateChanged(u=>{un&&un();$('#lo').style.display=u?'block':'none';
  if(!u)A.innerHTML='<div class="mid"><p style="margin-bottom:14px">অ্যাডমিন হিসেবে গুগল দিয়ে লগইন করুন।</p><button class="b g" onclick="auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message))">গুগল দিয়ে লগইন</button></div>';
  else if(!ADMINS.includes(u.email))A.innerHTML=`<div class="mid"><p><b>${E(u.email)}</b> অ্যাডমিন তালিকায় নেই। সঠিক গুগল অ্যাকাউন্ট দিয়ে লগইন করুন।</p></div>`;
  else shell()});
-function shell(){A.innerHTML='<div class="tabs"><button id="t1" onclick="tab(1)">অর্ডার</button><button id="t2" onclick="tab(2)">পণ্য</button><button id="t3" onclick="tab(3)">সাইট সেটিংস</button></div><div id="v"></div>';tab(1)}
-function tab(n){un&&un();[1,2,3].forEach(i=>$('#t'+i).className=i==n?'on':'');[0,orders,prods,sets][n]()}
+function shell(){A.innerHTML='<div class="tabs"><button id="t1" onclick="tab(1)">অর্ডার</button><button id="t2" onclick="tab(2)">পণ্য</button><button id="t3" onclick="tab(3)">সাইট সেটিংস</button><button id="t4" onclick="tab(4)">চ্যাট</button></div><div id="v"></div>';tab(1)}
+function tab(n){un&&un();[1,2,3,4].forEach(i=>$('#t'+i).className=i==n?'on':'');[0,orders,prods,sets,chats][n]()}
 
 /* অর্ডার */
 function orders(){$('#v').innerHTML='<div class="chips" id="fl"></div><div id="ol"></div>';
@@ -62,7 +66,7 @@ $('#ol').innerHTML=l.map(o=>`<div class="c"><div class="rw"><b>#${E(o.id.slice(0
 <div>${E(o.district)}, ${E(o.area)}<br>${E(o.address)}</div>
 <div class="it">${(o.items||[]).map(i=>`${E(i.n)} (${E(i.col)}${i.sz?', সাইজ '+E(i.sz):''}) × ${E(i.qty)}`).join('<br>')}</div>
 <b>মোট ৳${E(o.total)}</b> <small>(ডেলিভারি ৳${E(o.delivery)} সহ, ${o.payment=='cod'?'ক্যাশ অন ডেলিভারি':E(o.payment)})</small>
-<div class="bt"><button class="ok" onclick="st('${o.id}','অ্যাপ্রুভড')">অ্যাপ্রুভ</button><select onchange="st('${o.id}',this.value)">${S.map(s=>`<option ${s==o.status?'selected':''}>${s}</option>`).join('')}</select><button class="no" onclick="st('${o.id}','বাতিল')">বাতিল</button><button onclick="delO('${o.id}')">মুছুন</button></div></div>`).join('')||'<p class="mid">কোনো অর্ডার নেই।</p>'}
+<div class="bt"><button class="ok" onclick="st('${o.id}','কনফার্মড')">কনফার্ম</button><select onchange="st('${o.id}',this.value)">${S.map(s=>`<option ${s==o.status?'selected':''}>${s}</option>`).join('')}</select><button class="no" onclick="st('${o.id}','বাতিল')">বাতিল</button><button onclick="delO('${o.id}')">মুছুন</button></div></div>`).join('')||'<p class="mid">কোনো অর্ডার নেই।</p>'}
 const st=(id,s)=>db.collection('orders').doc(id).update({status:s});
 const delO=id=>confirm('অর্ডারটি স্থায়ীভাবে মুছবেন?')&&db.collection('orders').doc(id).delete();
 
@@ -95,4 +99,22 @@ $('#v').innerHTML=`<div class="c"><label>হোম পেজের বড় ল
 <label>ডেলিভারি চার্জ, ঢাকা (৳)</label><input id="st3" type="number" value="${s.dhaka}"><label>ডেলিভারি চার্জ, ঢাকার বাইরে (৳)</label><input id="st4" type="number" value="${s.out}">
 <div class="bt"><button class="b g" onclick="ss()">সেভ করুন</button></div></div>`}
 async function ss(){try{await db.collection('settings').doc('site').set({title:g('st1'),sub:g('st2'),dhaka:+g('st3'),out:+g('st4')});alert('সেভ হয়েছে।')}catch(e){alert('সেভ হয়নি: '+e.message)}}
+
+/* চ্যাট */
+let CH={};
+function chats(){$('#v').innerHTML='<div id="cl"></div>';
+un=db.collection('chats').orderBy('lastAt','desc').onSnapshot(s=>{CH={};s.docs.forEach(d=>CH[d.id]=d.data());
+$('#cl').innerHTML=s.docs.map(d=>{const c=d.data();return `<div class="c" style="cursor:pointer" onclick="chatO('${d.id}')"><div class="rw"><b>${E(c.name||'গ্রাহক')}${c.unreadAdmin?'<span class="dot"></span>':''}</b><small>${c.lastAt&&c.lastAt.toDate?E(c.lastAt.toDate().toLocaleString('bn-BD')):''}</small></div><small>${E(c.email)}</small><div style="margin-top:4px;color:#555">${E((c.lastMsg||'').slice(0,80))}</div></div>`}).join('')||'<p class="mid">এখনো কোনো চ্যাট আসেনি।</p>'},e=>$('#cl').textContent=e.message)}
+function chatO(uid){const c=CH[uid]||{};cun&&cun();
+M(`<div style="display:flex;flex-direction:column;height:80vh"><div class="rw" style="margin-bottom:8px"><b>${E(c.name||'গ্রাহক')}<br><small style="font-weight:400">${E(c.email)}</small></b><button class="b" onclick="closeM()">✕</button></div>
+<div id="cm" style="flex:1;overflow:auto;background:#f7f4ef;border-radius:8px;padding:8px"></div>
+<div class="rw" style="margin-top:8px"><input id="ci" placeholder="উত্তর লিখুন..." onkeydown="if(event.key=='Enter')sendA('${uid}')"><button class="b g" onclick="sendA('${uid}')">পাঠান</button></div></div>`);
+const r=db.collection('chats').doc(uid);
+cun=r.collection('messages').orderBy('createdAt').onSnapshot(s=>{const el=$('#cm');if(!el)return;
+el.innerHTML=s.docs.map(d=>{const m=d.data();return `<div class="${m.from=='admin'?'ma':'mu'}">${E(m.text)}</div>`}).join('');el.scrollTop=el.scrollHeight;
+r.set({unreadAdmin:false},{merge:true}).catch(()=>{})},e=>alert(e.message))}
+async function sendA(uid){const t=g('ci');if(!t)return;$('#ci').value='';
+try{const r=db.collection('chats').doc(uid),ts=firebase.firestore.FieldValue.serverTimestamp();
+await r.collection('messages').add({text:t,from:'admin',createdAt:ts});
+await r.set({lastMsg:'আপনি: '+t,lastAt:ts,unreadAdmin:false},{merge:true})}catch(e){alert('পাঠানো হয়নি: '+e.message)}}
 </script></body></html>
