@@ -45,7 +45,7 @@ const $=s=>document.querySelector(s),g=i=>$('#'+i).value.trim();
 const E=s=>String(s??'').replace(/[&<>"']/g,c=>'&#'+c.charCodeAt(0)+';');
 const S=['নতুন','কনফার্মড','প্রস্তুত হচ্ছে','পাঠানো হয়েছে','ডেলিভারি সম্পন্ন','বাতিল'],CT={wallet:'মানিব্যাগ',shoe:'জুতা',bag:'ব্যাগ',belt:'বেল্ট'};
 firebase.initializeApp(FC);const auth=firebase.auth(),db=firebase.firestore();
-let un,OR=[],PR=[],flt='সব',IM='';
+let un,OR=[],PR=[],flt='সব',IMS=[],PM={};
 const A=$('#app');
 let cun=null;function M(h){$('#mb').innerHTML=h;$('#ov').style.display='flex'}function closeM(){cun&&cun();cun=null;$('#ov').style.display='none'}
 auth.onAuthStateChanged(u=>{un&&un();$('#lo').style.display=u?'block':'none';
@@ -56,17 +56,18 @@ function shell(){A.innerHTML='<div class="tabs"><button id="t1" onclick="tab(1)"
 function tab(n){un&&un();[1,2,3,4].forEach(i=>$('#t'+i).className=i==n?'on':'');[0,orders,prods,sets,chats][n]()}
 
 /* অর্ডার */
-function orders(){$('#v').innerHTML='<div class="chips" id="fl"></div><div id="ol"></div>';
+function orders(){$('#v').innerHTML='<div class="chips" id="fl"></div><div id="ol"></div>';db.collection('products').get().then(s=>{s.docs.forEach(d=>PM[d.id]=d.data().img||'');drawO()}).catch(()=>{});
 un=db.collection('orders').orderBy('createdAt','desc').onSnapshot(s=>{OR=s.docs.map(d=>({id:d.id,...d.data()}));drawO()},e=>$('#ol').textContent=e.message)}
-function drawO(){const l=OR.filter(o=>flt=='সব'||o.status==flt);
+function drawO(){if(!$('#fl'))return;const l=OR.filter(o=>flt=='সব'||o.status==flt);
 $('#fl').innerHTML=['সব',...S].map(s=>`<button class="${s==flt?'on':''}" onclick="flt='${s}';drawO()">${s}${s=='সব'?'':' ('+OR.filter(o=>o.status==s).length+')'}</button>`).join('');
 $('#ol').innerHTML=l.map(o=>`<div class="c"><div class="rw"><b>#${E(o.id.slice(0,8).toUpperCase())}</b><span class="tag">${E(o.status)}</span></div>
 <small>${o.createdAt?o.createdAt.toDate().toLocaleString('bn-BD'):''}</small>
 <div>${E(o.name)} · <a href="tel:${E(o.phone)}">${E(o.phone)}</a><br><small>${E(o.email)}</small></div>
 <div>${E(o.district)}, ${E(o.area)}<br>${E(o.address)}</div>
-<div class="it">${(o.items||[]).map(i=>`${E(i.n)} (${E(i.col)}${i.sz?', সাইজ '+E(i.sz):''}) × ${E(i.qty)}`).join('<br>')}</div>
+<div class="it">${(o.items||[]).map(i=>{const u=i.th||PM[i.id];return `<div class="rw" style="justify-content:flex-start;gap:10px;margin:6px 0">${u?`<img class="th" style="width:64px;height:64px;cursor:zoom-in" src="${E(u)}" onclick="bigO('${E(i.id)}',this.src)">`:'<div class="th" style="width:64px;height:64px">ছবি নেই</div>'}<div>${E(i.n)}<br><small>${E(i.col)}${i.sz?', সাইজ '+E(i.sz):''} × ${E(i.qty)} · ৳${E(i.p)}</small></div></div>`}).join('')}</div>
 <b>মোট ৳${E(o.total)}</b> <small>(ডেলিভারি ৳${E(o.delivery)} সহ, ${o.payment=='cod'?'ক্যাশ অন ডেলিভারি':E(o.payment)})</small>
 <div class="bt"><button class="ok" onclick="st('${o.id}','কনফার্মড')">কনফার্ম</button><select onchange="st('${o.id}',this.value)">${S.map(s=>`<option ${s==o.status?'selected':''}>${s}</option>`).join('')}</select><button class="no" onclick="st('${o.id}','বাতিল')">বাতিল</button><button onclick="delO('${o.id}')">মুছুন</button></div></div>`).join('')||'<p class="mid">কোনো অর্ডার নেই।</p>'}
+const bigO=(id,src)=>M(`<img src="${E(PM[id]||src)}" style="width:100%;border-radius:8px"><div class="bt"><button class="b" onclick="closeM()">বন্ধ করুন</button></div>`);
 const st=(id,s)=>db.collection('orders').doc(id).update({status:s});
 const delO=id=>confirm('অর্ডারটি স্থায়ীভাবে মুছবেন?')&&db.collection('orders').doc(id).delete();
 
@@ -75,9 +76,9 @@ function prods(){$('#v').innerHTML='<button class="b g" onclick="pf()">+ নত�
 un=db.collection('products').onSnapshot(s=>{PR=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.t||0)-(a.t||0));
 $('#pl').innerHTML=PR.map(p=>`<div class="c"><div class="rw" style="justify-content:flex-start">${p.img?`<img class="th" src="${p.img}">`:'<div class="th">ছবি নেই</div>'}<div style="flex:1"><b>${E(p.n)}</b><br>${CT[p.c]||''} · ৳${E(p.p)} <s style="color:#999">৳${E(p.o)}</s><br><span class="tag">${p.active===false?'লুকানো':'চালু'}</span></div></div>
 <div class="bt"><button onclick="pf('${p.id}')">এডিট</button><button onclick="db.collection('products').doc('${p.id}').update({active:${p.active===false}})">${p.active===false?'দেখান':'লুকান'}</button><button class="no" onclick="confirm('পণ্যটি মুছবেন?')&&db.collection('products').doc('${p.id}').delete()">মুছুন</button></div></div>`).join('')||'<p class="mid">এখনো কোনো পণ্য নেই। "নতুন পণ্য" চাপুন।</p>'})}
-function pf(id){const p=PR.find(x=>x.id==id)||{};IM=p.img||'';
+function pf(id){const p=PR.find(x=>x.id==id)||{};IMS=(p.imgs&&p.imgs.length?p.imgs:(p.img?[p.img]:[])).slice();
 M(`<h3>${id?'পণ্য এডিট':'নতুন পণ্য'}</h3>
-<label>পণ্যের ছবি</label><img id="pv" class="th" style="width:100px;height:100px" ${IM?`src="${IM}"`:''}><input type="file" accept="image/*" onchange="pick(this.files[0])" style="margin-top:6px">
+<label>পণ্যের ছবি (সর্বোচ্চ ৫টি, একসাথে একাধিক বাছাই করা যায়)</label><div id="pvs" style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0"></div><input type="file" accept="image/*" multiple onchange="pick(this.files);this.value=''">
 <label>নাম</label><input id="n" value="${E(p.n)}">
 <label>ক্যাটাগরি</label><select id="c">${Object.entries(CT).map(([k,v])=>`<option value="${k}" ${p.c==k?'selected':''}>${v}</option>`).join('')}</select>
 <label>বিক্রয় মূল্য (৳)</label><input id="p" type="number" value="${p.p||''}">
@@ -85,10 +86,14 @@ M(`<h3>${id?'পণ্য এডিট':'নতুন পণ্য'}</h3>
 <label>রং (কমা দিয়ে লিখুন)</label><input id="co" value="${E((p.col||[]).join(', '))}" placeholder="কালো, বাদামি">
 <label>সাইজ (কমা দিয়ে, না থাকলে ফাঁকা)</label><input id="sz" value="${E((p.sz||[]).join(', '))}" placeholder="40, 41, 42, 43">
 <label><input type="checkbox" id="ac" ${p.active===false?'':'checked'}> সাইটে দেখান</label>
-<div class="bt"><button class="b g" onclick="sp('${id||''}')">সেভ করুন</button><button class="b" onclick="closeM()">বাতিল</button></div>`)}
-function pick(f){if(!f)return;const i=new Image;i.onload=()=>{const s=Math.min(1,700/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);IM=c.toDataURL('image/jpeg',.72);$('#pv').src=IM};i.src=URL.createObjectURL(f)}
+<div class="bt"><button class="b g" onclick="sp('${id||''}')">সেভ করুন</button><button class="b" onclick="closeM()">বাতিল</button></div>`);drawIM()}
+function drawIM(){const e=$('#pvs');if(!e)return;e.innerHTML=IMS.map((u,k)=>`<div style="position:relative"><img class="th" style="width:84px;height:84px;${k==0?'outline:2px solid #d4a017':''}" src="${u}" onclick="mainI(${k})"><button onclick="rmI(${k})" style="position:absolute;top:-8px;right:-8px;width:24px;height:24px;border-radius:50%;border:0;background:#c00;color:#fff">×</button>${k==0?'<small style="position:absolute;bottom:2px;left:2px;background:#d4a017;padding:0 4px;border-radius:4px;font-size:10px">মূল</small>':''}</div>`).join('')||'<small style="color:#888">কোনো ছবি নেই</small>'}
+const rmI=k=>{IMS.splice(k,1);drawIM()},mainI=k=>{IMS.unshift(IMS.splice(k,1)[0]);drawIM()};
+async function pick(fl){for(const f of [...fl]){if(IMS.length>=5){alert('সর্বোচ্চ ৫টি ছবি দেওয়া যাবে।');break}
+await new Promise(res=>{const i=new Image;i.onload=()=>{const s=Math.min(1,800/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=i.width*s;c.height=i.height*s;c.getContext('2d').drawImage(i,0,0,c.width,c.height);IMS.push(c.toDataURL('image/jpeg',.7));res()};i.onerror=res;i.src=URL.createObjectURL(f)})}drawIM()}
 async function sp(id){const l=x=>g(x).split(',').map(a=>a.trim()).filter(Boolean),pr=+g('p');
-const o={n:g('n'),c:g('c'),p:pr,o:+g('o')||pr,col:l('co'),sz:l('sz'),active:$('#ac').checked,img:IM};
+const o={n:g('n'),c:g('c'),p:pr,o:+g('o')||pr,col:l('co'),sz:l('sz'),active:$('#ac').checked,img:IMS[0]||'',imgs:IMS};
+if(IMS.join('').length>900000){alert('ছবিগুলো মোট অনেক বড় হয়ে গেছে। কয়েকটা ছবি কমান।');return}
 if(!o.n||!pr||!o.col.length){alert('নাম, দাম আর অন্তত একটি রং দিন।');return}
 try{id?await db.collection('products').doc(id).update(o):await db.collection('products').add({...o,t:Date.now()});closeM()}catch(e){alert('সেভ হয়নি: '+e.message)}}
 
