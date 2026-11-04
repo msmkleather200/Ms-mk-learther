@@ -184,8 +184,8 @@ await db.collection('users').doc(r.user.uid).set({name:r.user.displayName||'',em
 const PH='01845907321',WA='8801845907321';
 function acc(){if(!user)return authM('login');const p=prof||{};
 M(`<h3>মাই অ্যাকাউন্ট</h3><p style="margin:8px 0"><b>${esc(p.name||user.displayName)}</b><br><small>${esc(user.email)}</small>${p.whatsapp?`<br><small>${esc(p.whatsapp)}</small>`:''}</p><button class="btn g" onclick="ordM()">📦 আমার অর্ডার</button><button class="btn" onclick="chatM()">💬 চ্যাট</button><button class="btn w" onclick="careM()">📞 কাস্টমার কেয়ার</button><button class="btn w" onclick="auth.signOut();closeM()">লগআউট</button>`)}
-const SS=['নতুন','কনফার্মড','পাঠানো হয়েছে','ডেলিভারি সম্পন্ন'];
-function ordH(o){const i=SS.indexOf(o.status),c=o.status=='বাতিল';
+const SS=['নতুন','কনফার্মড','প্রস্তুত হচ্ছে','পাঠানো হয়েছে','ডেলিভারি সম্পন্ন'],AL={'অ্যাপ্রুভড':'কনফার্মড','শিপড':'পাঠানো হয়েছে','ডেলিভারড':'ডেলিভারি সম্পন্ন'};
+function ordH(o){const i=SS.indexOf(AL[o.status]||o.status),c=o.status=='বাতিল';
 const d=o.createdAt&&o.createdAt.toDate?o.createdAt.toDate().toLocaleDateString('bn-BD',{day:'numeric',month:'long',year:'numeric'}):'';
 return `<div class="ob"><div class="row" style="border:0;padding:0"><b>অর্ডার #${esc(o.id.slice(0,8).toUpperCase())}</b><span class="tag ${c?'c':''}">${esc(o.status||'নতুন')}</span></div>
 <small>${d}</small><div class="ths">${(o.items||[]).map(t=>thumb(t.id,48)).join('')}</div><p style="margin:8px 0;font-size:13px">${(o.items||[]).map(t=>esc(t.n)+' × '+bn(t.qty)).join('<br>')}</p>
