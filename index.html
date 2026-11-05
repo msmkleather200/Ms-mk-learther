@@ -455,12 +455,12 @@ function zoomU(I,k){if(!I||!I.length)return;const z=$('#zv');
 z.innerHTML=`<button class="zc" onclick="zoomX()">✕</button><div class="zn" id="zn">${bn(k+1)}/${bn(I.length)}</div><div class="zs" id="zs" onscroll="const e=this;$('#zn').textContent=bn(Math.round(e.scrollLeft/e.clientWidth)+1)+'/${bn(I.length)}'">${I.map(u=>`<img src="${u}">`).join('')}</div>`;
 z.style.display='block';const s2=$('#zs');s2.scrollLeft=k*s2.clientWidth}
 function zoomX(){$('#zv').style.display='none';$('#zv').innerHTML=''}
-function item(){const x=P.find(a=>a.id==sel.id);return{id:x.id,n:x.n,p:x.p,col:sel.col,sz:sel.sz,qty:sel.qty}}
+function item(){const x=P.find(a=>a.id==sel.id);return{id:x.id,n:x.n,p:x.p,col:sel.col,sz:sel.sz,qty:sel.qty,ci:Math.max(0,x.col.indexOf(sel.col))}}
 function addCart(){const i=item(),f=cart.find(a=>a.id==i.id&&a.col==i.col&&a.sz==i.sz);f?f.qty+=i.qty:cart.push(i);save();closeM()}
-const thumb=(id,z,fb)=>{const x=P.find(a=>a.id==id),u=imgsOf(x)[0]||fb;return `<div class="th" style="width:${z}px;height:${z}px">${u?`<img src="${u}">`:ic(x)}</div>`};
+const thumb=(id,z,fb,ci)=>{const x=P.find(a=>a.id==id),I=imgsOf(x),u=fb||I[ci||0]||I[0];return `<div class="th" style="width:${z}px;height:${z}px">${u?`<img src="${u}">`:ic(x)}</div>`};
 function mkThumb(u){return new Promise(r=>{if(!u)return r('');const i=new Image;i.onload=()=>{try{const k=Math.min(1,120/Math.max(i.width,i.height)),c=document.createElement('canvas');c.width=Math.round(i.width*k);c.height=Math.round(i.height*k);c.getContext('2d').drawImage(i,0,0,c.width,c.height);r(c.toDataURL('image/jpeg',.6))}catch(e){r('')}};i.onerror=()=>r('');i.src=u;setTimeout(()=>r(''),4000)})}
 function cartM(){const t=cart.reduce((s,i)=>s+i.p*i.qty,0);
-M(`<h3>আপনার কার্ট</h3>`+(cart.length?cart.map((i,k)=>`<div class="ci">${thumb(i.id,76)}<div style="flex:1;min-width:0"><div class="nm2">${i.n}</div><small style="color:#666">${i.col}${i.sz?' · সাইজ '+bn(i.sz):''}</small><div class="r2"><b class="pr">৳${bn(i.p*i.qty)}</b><div class="q"><button onclick="cq(${k},-1)">−</button> ${bn(i.qty)} <button onclick="cq(${k},1)">+</button></div></div></div><button class="rm" onclick="cq(${k},-999)" aria-label="মুছুন">🗑</button></div>`).join('')+`<p class="row"><b>মোট</b><b>৳${bn(t)}</b></p><button class="btn g" onclick="checkout(cart,1)">অর্ডার করুন</button>`:'<p style="padding:14px 0">কার্ট খালি। পছন্দের পণ্য বেছে নিন।</p>'))}
+M(`<h3>আপনার কার্ট</h3>`+(cart.length?cart.map((i,k)=>`<div class="ci">${thumb(i.id,76,'',i.ci)}<div style="flex:1;min-width:0"><div class="nm2">${i.n}</div><small style="color:#666">${i.col}${i.sz?' · সাইজ '+bn(i.sz):''}</small><div class="r2"><b class="pr">৳${bn(i.p*i.qty)}</b><div class="q"><button onclick="cq(${k},-1)">−</button> ${bn(i.qty)} <button onclick="cq(${k},1)">+</button></div></div></div><button class="rm" onclick="cq(${k},-999)" aria-label="মুছুন">🗑</button></div>`).join('')+`<p class="row"><b>মোট</b><b>৳${bn(t)}</b></p><button class="btn g" onclick="checkout(cart,1)">অর্ডার করুন</button>`:'<p style="padding:14px 0">কার্ট খালি। পছন্দের পণ্য বেছে নিন।</p>'))}
 function cq(k,d){cart[k].qty+=d;if(cart[k].qty<1)cart.splice(k,1);save();cartM()}
 
 const GG=`<svg viewBox="0 0 48 48" aria-hidden="true"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>`;
@@ -470,7 +470,7 @@ const payH=(v,ic,t,s)=>`<label class="pay"><input type="radio" name="pay" value=
 function checkout(items,fromCart){if(!user){pend=()=>checkout(items,fromCart);authM('login','অর্ডার করতে আগে লগইন করুন।');return}
 const t=items.reduce((s,i)=>s+i.p*i.qty,0),p=prof||{};
 M(`<h3>অর্ডার সম্পন্ন করুন</h3>
-<div class="sec">${items.map(i=>`<div class="itc">${thumb(i.id,64)}<div class="mid"><div class="nm2">${esc(i.n)}</div><small>${esc(i.col)}${i.sz?' · সাইজ '+bn(i.sz):''} × ${bn(i.qty)}</small></div><b class="pr">৳${bn(i.p*i.qty)}</b></div>`).join('')}</div>
+<div class="sec">${items.map(i=>`<div class="itc">${thumb(i.id,64,'',i.ci)}<div class="mid"><div class="nm2">${esc(i.n)}</div><small>${esc(i.col)}${i.sz?' · সাইজ '+bn(i.sz):''} × ${bn(i.qty)}</small></div><b class="pr">৳${bn(i.p*i.qty)}</b></div>`).join('')}</div>
 <div class="sec"><div class="sech">${PIN}<span class="st">ডেলিভারি তথ্য</span></div>
 <input class="f" id="cn1" placeholder="আপনার নাম" value="${esc(p.name||user.displayName||'')}">
 <input class="f" id="cp" type="tel" placeholder="মোবাইল / হোয়াটসঅ্যাপ নম্বর" value="${esc(p.whatsapp||'')}">
@@ -494,7 +494,7 @@ function pay(v){if(v!='cod'){$('#pm').textContent='সার্ভারে স�
 async function place(){const v=i=>$('#'+i).value.trim(),e=$('#er');
 if(!v('cn1')||!v('cp')||!v('cd')||!v('cu')||!v('ca')){e.textContent='সব তথ্য পূরণ করুন।';return}
 if(!/^(\+?88)?01\d{9}$/.test(v('cp'))){e.textContent='সঠিক মোবাইল নম্বর দিন (যেমন 01XXXXXXXXX)।';return}
-const it=await Promise.all(window._it.map(async i=>({...i,th:await mkThumb(imgsOf(P.find(a=>a.id==i.id))[0])}))),sub=it.reduce((s,i)=>s+i.p*i.qty,0),dc=dch();$('#ob').disabled=true;e.textContent='';
+const it=await Promise.all(window._it.map(async i=>({...i,th:await mkThumb(imgsOf(P.find(a=>a.id==i.id))[i.ci||0]||imgsOf(P.find(a=>a.id==i.id))[0])}))),sub=it.reduce((s,i)=>s+i.p*i.qty,0),dc=dch();$('#ob').disabled=true;e.textContent='';
 try{const r=await db.collection('orders').add({uid:user.uid,email:user.email,name:v('cn1'),phone:v('cp'),district:v('cd'),area:v('cu'),address:v('ca'),items:it,subtotal:sub,delivery:dc,total:sub+dc,payment:'cod',status:'নতুন',createdAt:firebase.firestore.FieldValue.serverTimestamp()});
 if(window._fc){cart=[];save()}
 it.forEach(i=>{try{db.collection('products').doc(String(i.id)).update({sold:firebase.firestore.FieldValue.increment(i.qty)}).catch(()=>{})}catch(_){}});
@@ -633,12 +633,12 @@ let om='buy';
 function optM(m,id){om=m;if(!sel||String(sel.id)!=String(id)){const x=P.find(a=>a.id==id);sel={id,col:x.col[0],sz:x.sz&&x.sz.length?x.sz[0]:'',qty:1,gi:0}}optR();$('#os').style.display='flex'}
 function optX(){$('#os').style.display='none'}
 function optR(){const x=P.find(a=>a.id==sel.id);if(!x)return;const t=x.p*sel.qty;
-$('#osb').innerHTML=`<div class="oh">${thumb(x.id,92)}<div class="oi"><span class="dzp">৳${bn(x.p)}</span> <s>৳${bn(x.o)}</s><div class="ocl">রং: ${esc(sel.col)}${sel.sz?' · সাইজ '+bn(sel.sz):''}</div></div><button class="ox" onclick="optX()" aria-label="বন্ধ">✕</button></div>
+$('#osb').innerHTML=`<div class="oh">${thumb(x.id,92,'',x.col.indexOf(sel.col))}<div class="oi"><span class="dzp">৳${bn(x.p)}</span> <s>৳${bn(x.o)}</s><div class="ocl">রং: ${esc(sel.col)}${sel.sz?' · সাইজ '+bn(sel.sz):''}</div></div><button class="ox" onclick="optX()" aria-label="বন্ধ">✕</button></div>
 <div class="obd"><div class="olb">রং</div><div class="ochs">${x.col.map((c,k)=>`<span class="oc ${c==sel.col?'on':''}" onclick="optS('col',${k})">${esc(c)}</span>`).join('')}</div>
 ${x.sz&&x.sz.length?`<div class="olb">সাইজ</div><div class="ochs">${x.sz.map((z,k)=>`<span class="oc ${z==sel.sz?'on':''}" onclick="optS('sz',${k})">${bn(z)}</span>`).join('')}</div>`:''}
 <div class="oq"><span class="olb">পরিমাণ</span><div class="oqc"><button onclick="optQ(-1)">−</button><span>${bn(sel.qty)}</span><button onclick="optQ(1)">+</button></div></div></div>
 <button class="obt ${om=='buy'?'by':'cr'}" onclick="optGo()">${om=='buy'?'এখনই কিনুন ৳'+bn(t):'কার্টে যোগ করুন'}</button>`}
-function optS(t,k){const x=P.find(a=>a.id==sel.id);if(t=='col')sel.col=x.col[k];else sel.sz=x.sz[k];optR()}
+function optS(t,k){const x=P.find(a=>a.id==sel.id);if(t=='col'){sel.col=x.col[k];const I=imgsOf(x),g=$('#gal');if(g&&I[k]){sel.gi=k;g.scrollTo({left:k*g.clientWidth,behavior:'smooth'})}}else sel.sz=x.sz[k];optR()}
 function optQ(d){sel.qty=Math.max(1,sel.qty+d);optR()}
 function optGo(){if(om=='buy'){optX();checkout([item()])}else{const i=item(),f=cart.find(a=>a.id==i.id&&a.col==i.col&&a.sz==i.sz);f?f.qty+=i.qty:cart.push(i);save();optX();toast('কার্টে যোগ হয়েছে ✓')}}
 function toast(t){let d=$('#tst');if(!d){d=document.createElement('div');d.id='tst';document.body.appendChild(d)}d.textContent=t;d.style.display='block';clearTimeout(d._t);d._t=setTimeout(()=>d.style.display='none',1800)}
@@ -667,5 +667,4 @@ function diag(){
  var L=['manifest.json','sw.js','icon-192.png','icon-512.png','icon-maskable-512.png'];
  Promise.all(L.map(function(f){return fetch(f+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok}).catch(function(){return false})})).then(function(res){
   var miss=[],lines=L.map(function(f,i){if(!res[i])miss.push(f);return (res[i]?'✅ ':'❌ ')+f}).join('<br>');
-  var hint=miss.length?'<b>'+miss.join(', ')+'</b> সাইটে পাওয়া যাচ্ছে না। এই ফাইলগুলো index.html-এর পাশে আপলোড করুন।':'ফাইল সব ঠিক আছে। অ্যাপটা সম্ভবত ফোনে আগে থেকেই ইনস্টল করা আছে। পুরোনোটা আনইনস্টল করে Chrome-এ পেজ রিলোড করে আবার চাপুন। না হলে Chrome-এর ⋮ মেনু থেকে "অ্যাপ ইনস্টল করুন" চাপুন।';
-  var d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:#000a;z-index:40;display:flex;align-items:center
+  var hint=miss.length?'<b>'+miss.join(', ')+'</b> সাইটে পাওয়া যাচ্ছে না। এই ফাইলগুলো index.html-এর পাশে আপলোড করুন।':'ফাইল সব ঠিক আছে। অ্যাপটা সম্ভবত ফোনে আগে থেকেই ইনস্টল করা আছে। পুরোনোটা 
