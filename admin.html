@@ -83,16 +83,16 @@ function prods(){$('#v').innerHTML='<button class="b g" onclick="pf()">+ নত�
 un=db.collection('products').onSnapshot(s=>{PR=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.t||0)-(a.t||0));
 $('#pl').innerHTML=PR.map(p=>`<div class="c"><div class="rw" style="justify-content:flex-start">${p.img?`<img class="th" src="${p.img}">`:'<div class="th">ছবি নেই</div>'}<div style="flex:1"><b>${E(p.n)}</b><br>${CT[p.c]||''} · ৳${E(p.p)} <s style="color:#999">৳${E(p.o)}</s><br><span class="tag">${p.active===false?'লুকানো':'চালু'}</span></div></div>
 <div class="bt"><button onclick="pf('${p.id}')">এডিট</button><button onclick="db.collection('products').doc('${p.id}').update({active:${p.active===false}})">${p.active===false?'দেখান':'লুকান'}</button><button class="no" onclick="confirm('পণ্যটি মুছবেন?')&&db.collection('products').doc('${p.id}').delete()">মুছুন</button></div></div>`).join('')||'<p class="mid">এখনো কোনো পণ্য নেই। "নতুন পণ্য" চাপুন।</p>'})}
-function pf(id){const p=PR.find(x=>x.id==id)||{};TG.co=(p.col||[]).map(String);TG.sz=(p.sz||[]).map(String);IMS=(p.imgs&&p.imgs.length?p.imgs:(p.img?[p.img]:[])).slice();
+function pf(id){const p=PR.find(x=>x.id==id)||{};TG.co=(p.col||[]).flatMap(c=>String(c).split(SEP.co)).map(c=>c.trim()).filter(Boolean);TG.sz=(p.sz||[]).map(String);IMS=(p.imgs&&p.imgs.length?p.imgs:(p.img?[p.img]:[])).slice();
 M(`<h3>${id?'পণ্য এডিট':'নতুন পণ্য'}</h3>
 <label>পণ্যের ছবি (সর্বোচ্চ ৫টি, একসাথে একাধিক বাছাই করা যায়)</label><div id="pvs" style="display:flex;gap:10px;flex-wrap:wrap;margin:6px 0"></div><input type="file" accept="image/*" multiple onchange="pick(this.files);this.value=''">
 <label>নাম</label><input id="n" value="${E(p.n)}">
+<label>পণ্যের বিস্তারিত (ঐচ্ছিক)</label><textarea id="ds" rows="7" placeholder="চামড়ার ধরন, মাপ, বৈশিষ্ট্য, ওয়ারেন্টি ইত্যাদি লিখুন...">${E(p.desc)}</textarea>
 <label>ক্যাটাগরি</label><select id="c">${Object.entries(CT).map(([k,v])=>`<option value="${k}" ${p.c==k?'selected':''}>${v}</option>`).join('')}</select>
 <label>বিক্রয় মূল্য (৳)</label><input id="p" type="number" value="${p.p||''}">
 <label>আগের দাম (৳, ঐচ্ছিক)</label><input id="o" type="number" value="${p.o||''}">
 <label>রং (লিখে কমা দিন বা "+ যোগ" চাপুন, প্রতিটা আলাদা বাক্স হবে)</label>${tgH('co','যেমন: কালো')}
 <label>সাইজ (একইভাবে, না থাকলে ফাঁকা)</label>${tgH('sz','যেমন: 40')}
-<label>পণ্যের বিস্তারিত (ঐচ্ছিক)</label><textarea id="ds" rows="6" placeholder="চামড়ার ধরন, মাপ, বৈশিষ্ট্য, ওয়ারেন্টি ইত্যাদি লিখুন...">${E(p.desc)}</textarea>
 <label>বিক্রি হয়েছে (সংখ্যা, ঐচ্ছিক)</label><input id="sd" type="number" min="0" value="${+p.sold||0}">
 <label><input type="checkbox" id="ac" ${p.active===false?'':'checked'}> সাইটে দেখান</label>
 <div class="bt"><button class="b g" onclick="sp('${id||''}')">সেভ করুন</button><button class="b" onclick="closeM()">বাতিল</button></div>`);drawIM();tgD('co');tgD('sz')}
@@ -111,7 +111,8 @@ let TG={co:[],sz:[]};
 const tgH=(k,ph)=>`<div class="tgw"><div class="tg"><span id="tgb_${k}"></span><input class="tgi" id="tgi_${k}" placeholder="${ph}" oninput="tgIn('${k}',this)" onkeydown="if(event.key=='Enter'){event.preventDefault();tgAdd('${k}')}" onblur="tgAdd('${k}')"></div><button type="button" class="b g" onmousedown="event.preventDefault()" onclick="tgAdd('${k}');$('#tgi_${k}').focus()">+ যোগ</button></div>`;
 function tgD(k){const e=$('#tgb_'+k);if(e)e.innerHTML=TG[k].map((t,i)=>`<span class="tgb">${E(t)}<button type="button" onmousedown="event.preventDefault()" onclick="tgRm('${k}',${i})">×</button></span>`).join('')}
 function tgPush(k,t){t=t.trim();if(t&&!TG[k].includes(t))TG[k].push(t)}
-function tgIn(k,el){if(/[,،]/.test(el.value)){const a=el.value.split(/[,،]/);el.value=a.pop();a.forEach(t=>tgPush(k,t));tgD(k)}}
+const SEP={co:/[,،.।]/,sz:/[,،]/};
+function tgIn(k,el){if(SEP[k].test(el.value)){const a=el.value.split(SEP[k]);el.value=a.pop();a.forEach(t=>tgPush(k,t));tgD(k)}}
 function tgAdd(k){const el=$('#tgi_'+k);if(!el)return;tgPush(k,el.value);el.value='';tgD(k)}
 function tgRm(k,i){TG[k].splice(i,1);tgD(k)}
 
