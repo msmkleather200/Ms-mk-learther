@@ -690,17 +690,21 @@ if(!user||!db){w.style.display='none';l.innerHTML='';return}
 hoUn=db.collection('orders').where('uid','==',user.uid).onSnapshot(sn=>{const a=sn.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(y.createdAt?y.createdAt.seconds:Infinity)-(x.createdAt?x.createdAt.seconds:Infinity));
 const act=a.filter(o=>{const t=AL[o.status]||o.status;return t!='ডেলিভারি সম্পন্ন'&&t!='বাতিল'});w.style.display=act.length?'block':'none';l.innerHTML=act.map(ordH).join('')},e=>console.error(e))}
 const TRSH=SV('<path d="M4 7h16M10 11v6M14 11v6M6 7l1 12a2 2 0 0 0 2 2h6a2 2 0 0 0 2-2l1-12M9 7V4h6v3"/>'),TKT=SV('<path d="M3 9a2 2 0 0 0 0 6v3h18v-3a2 2 0 0 1 0-6V6H3z"/><path d="M14 7v10" stroke-dasharray="2 2"/>');
-/* ভাউচার (এখন শুধু দেখানোর জন্য; পরে এখানে বদলান) */
-const VOUCHERS=[{a:'৳১০০',t:'ছাড়',m:'সর্বনিম্ন কেনাকাটা ৳১,০০০',e:'৩০ নভেম্বর পর্যন্ত'},{a:'৳৫০',t:'ছাড়',m:'সর্বনিম্ন কেনাকাটা ৳৫০০',e:'৩০ নভেম্বর পর্যন্ত'},{a:'ফ্রি',t:'ডেলিভারি',m:'সর্বনিম্ন কেনাকাটা ৳১,৫০০',e:'৩০ নভেম্বর পর্যন্ত'}];
+/* ভাউচার: অ্যাডমিন প্যানেল থেকে আসে (vouchers কালেকশন) */
+let VCH=null;
+async function loadV(){try{const td=new Date().toLocaleDateString('en-CA'),sn=await db.collection('vouchers').get();VCH=sn.docs.map(d=>({id:d.id,...d.data()})).filter(v=>v.active!==false&&(!v.exp||v.exp>=td)).sort((a,b)=>(b.t||0)-(a.t||0))}catch(e){console.error(e);VCH=[]}}
 function tbar(k){const n=cart.reduce((s,i)=>s+i.qty,0),bk=`<button class="pb1" onclick="closeM()" aria-label="ফিরে যান">${BCK}</button>`;
 if(k=='o')return `<div class="pbar">${bk}<div class="pbs tt"><b>আমার অর্ডার</b></div><button class="pb1" onclick="cartM()" aria-label="কার্ট">${CRT}<span class="pcn" style="display:${n?'block':'none'}">${bn(n)}</span></button></div>`;
 return `<div class="pbar">${bk}<span class="pbt">কার্ট</span><div class="pbs vc" onclick="vchM()">${TKT}<span>ভাউচার দেখুন</span><i>›</i></div><button class="pb1" onclick="clrC()" aria-label="কার্ট খালি করুন">${TRSH}</button></div>`}
 function Mt(k,h){M(tbar(k)+h);$('#ov').classList.add('pp2')}
 function clrC(){if(cart.length&&confirm('কার্টের সব পণ্য মুছে ফেলবেন?')){cart=[];save();cartM()}}
-function vchM(){$('#osb').className='';$('#osb').innerHTML=`<div class="oh" style="padding-bottom:10px"><div class="oi"><div class="olb" style="margin:0;font-size:18px">আমার ভাউচার</div></div><button class="ox" onclick="optX()" aria-label="বন্ধ করুন">✕</button></div><div class="obd">${VOUCHERS.map(v=>`<div class="vcc"><div class="vca"><b>${v.a}</b><span>${v.t}</span></div><div class="vcb"><b>${v.m}</b><small>${v.e}</small></div></div>`).join('')}<p style="text-align:center;color:#888;font-size:12px;margin-top:10px">ভাউচার শীঘ্রই চালু হবে।</p></div>`;$('#os').style.display='flex'}
+function vchM(){$('#osb').className='';
+const L=(VCH||[]).map(v=>{const a=v.type=='ship'?'ফ্রি':v.type=='pct'?bn(v.value)+'%':'৳'+bn(v.value),t=v.type=='ship'?'ডেলিভারি':'ছাড়';
+return `<div class="vcc"><div class="vca"><b>${a}</b><span>${t}</span></div><div class="vcb"><b>${v.min?'সর্বনিম্ন কেনাকাটা ৳'+bn(v.min):'কোনো সর্বনিম্ন সীমা নেই'}</b><small>${v.exp?'মেয়াদ: '+new Date(v.exp+'T00:00').toLocaleDateString('bn-BD',{day:'numeric',month:'long',year:'numeric'}):'মেয়াদ সীমা নেই'}</small>${v.code?`<small>কোড: <b>${esc(v.code)}</b></small>`:''}</div></div>`}).join('');
+$('#osb').innerHTML=`<div class="oh" style="padding-bottom:10px"><div class="oi"><div class="olb" style="margin:0;font-size:18px">আমার ভাউচার</div></div><button class="ox" onclick="optX()" aria-label="বন্ধ করুন">✕</button></div><div class="obd">${VCH===null?'<p style="text-align:center;color:#888;padding:20px 0">লোড হচ্ছে...</p>':L+(L?'<p style="text-align:center;color:#888;font-size:12px;margin-top:10px">চেকআউটে ভাউচার ব্যবহারের সুবিধা শীঘ্রই আসছে।</p>':'<p style="text-align:center;color:#888;padding:20px 0">এখন কোনো ভাউচার নেই।</p>')}</div>`;$('#os').style.display='flex'}
 async function loadP(){try{const s=await db.collection('products').get(),l=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.active!==false);
 if(l.length)P=l.sort((a,b)=>(b.t||0)-(a.t||0)).map(x=>({...x,col:(x.col||[]).flatMap(c=>String(c).split(/[,،.।]/)).map(c=>c.trim()).filter(Boolean)}));
-const t=await db.collection('settings').doc('site').get();if(t.exists){ST={...ST,...t.data()};$('.hero h1').textContent=ST.title;$('.hero p').textContent=ST.sub}}catch(e){console.error(e)}render();loadR()}
+const t=await db.collection('settings').doc('site').get();if(t.exists){ST={...ST,...t.data()};$('.hero h1').textContent=ST.title;$('.hero p').textContent=ST.sub}}catch(e){console.error(e)}render();loadR();loadV()}
 render();ui();if(db)loadP();
 let dp=null;const ib=document.getElementById('ib');
 addEventListener('beforeinstallprompt',e=>{e.preventDefault();dp=e;ib.style.display='block'});
