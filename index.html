@@ -604,14 +604,19 @@ M(`<h3>মাই অ্যাকাউন্ট</h3>
 <button class="btn w lo" onclick="auth.signOut();closeM()">${OUT}লগআউট</button>`);fillRv()}
 async function fillRv(){const el=$('#rvl');if(!el)return;
 try{const o=await db.collection('orders').where('uid','==',user.uid).get();
-const dn={};try{const r=await db.collection('reviews').where('uid','==',user.uid).get();r.docs.forEach(d=>{const v=d.data();dn[String(v.pid)]=v})}catch(_){console.error(_)}
-const seen={},l=[];o.docs.map(d=>d.data()).filter(x=>(AL[x.status]||x.status)=='ডেলিভারি সম্পন্ন').forEach(x=>(x.items||[]).forEach(i=>{const k=String(i.id);if(!seen[k]){seen[k]=1;l.push(i)}}));
-el.innerHTML=l.length?l.map(i=>{const v=dn[String(i.id)],k=esc(String(i.id));
-return `<div class="rcd"><div class="rtop">${thumb(i.id,64,i.th)}<div class="rmd"><div class="rnm">${esc(i.n)}</div><span class="dtg">ডেলিভারি সম্পন্ন</span></div></div><div class="rbt"><div class="rst">${[1,2,3,4,5].map(n=>`<span onclick="rvM('${k}',${n})">${STR(v&&n<=v.rating,30)}</span>`).join('')}</div><span class="rlk" onclick="rvM('${k}')">${v?'রিভিউ এডিট করুন':'রিভিউ লিখুন'} ›</span></div></div>`}).join(''):'<div class="rem">ডেলিভারি সম্পন্ন হওয়া পণ্যের রিভিউ এখানে দেখা যাবে।</div>'}
+const rvs=[];try{const r=await db.collection('reviews').where('uid','==',user.uid).get();r.docs.forEach(d=>rvs.push({docId:d.id,...d.data()}))}catch(_){console.error(_)}
+const done={},legacy={};
+rvs.forEach(v=>{if(v.oid)done[v.oid+'|'+v.pid]=1;else{const t=v.createdAt&&v.createdAt.seconds!=null?v.createdAt.seconds:Infinity;legacy[String(v.pid)]=Math.max(legacy[String(v.pid)]||0,t)}});
+const ts=x=>x.createdAt&&x.createdAt.seconds!=null?x.createdAt.seconds:0;
+const od=o.docs.map(d=>({id:d.id,...d.data()})).filter(x=>(AL[x.status]||x.status)=='ডেলিভারি সম্পন্ন').sort((a,b)=>ts(b)-ts(a));
+const l=[];
+od.forEach(x=>(x.items||[]).forEach(i=>{const pid=String(i.id);if(done[x.id+'|'+pid])return;if(legacy[pid]!==undefined&&ts(x)<=legacy[pid])return;l.push({o:x,i})}));
+el.innerHTML=l.length?l.map(({o:x,i})=>{const k=esc(String(i.id)),oi=esc(x.id);
+return `<div class="rcd"><div class="rtop">${thumb(i.id,64,i.th,i.ci)}<div class="rmd"><div class="rnm">${esc(i.n)}</div><span class="dtg">ডেলিভারি সম্পন্ন</span> <small style="color:#8a7a5a;margin-left:4px">#${esc(x.id.slice(0,8).toUpperCase())}</small></div></div><div class="rbt"><div class="rst">${[1,2,3,4,5].map(n=>`<span onclick="rvM('${k}',${n},'${oi}')">${STR(0,30)}</span>`).join('')}</div><span class="rlk" onclick="rvM('${k}',0,'${oi}')">রিভিউ লিখুন ›</span></div></div>`}).join(''):'<div class="rem">রিভিউ দেওয়ার মতো কোনো পণ্য নেই। নতুন পণ্য ডেলিভারি সম্পন্ন হলে এখানে আসবে।</div>'}
 catch(e){console.error(e);el.innerHTML='<div class="rem">অর্ডার লোড করা যায়নি। ইন্টারনেট পরীক্ষা করুন।</div>'}}
-async function rvM(pid,pre){pid=String(pid);const x=P.find(a=>String(a.id)==pid)||{n:'পণ্য',c:'bag'};let old=null;
-try{const d=await db.collection('reviews').doc(user.uid+'_'+pid).get();if(d.exists)old=d.data()}catch(e){}
-rv={pid,n:x.n,r:pre||(old?old.rating:0),imgs:old&&old.imgs?old.imgs.slice():[]};
+async function rvM(pid,pre,oid,docId){pid=String(pid);oid=oid||'';docId=docId||(oid?user.uid+'_'+oid+'_'+pid:user.uid+'_'+pid);const x=P.find(a=>String(a.id)==pid)||{n:'পণ্য',c:'bag'};let old=null;
+try{const d=await db.collection('reviews').doc(docId).get();if(d.exists)old=d.data()}catch(e){}
+rv={pid,oid,docId,created:old&&old.createdAt||null,n:x.n,r:pre||(old?old.rating:0),imgs:old&&old.imgs?old.imgs.slice():[]};
 M(`<div class="bh"><button class="bkb" onclick="acc()">‹</button><h3>রিভিউ লিখুন</h3></div>
 <div class="rpd">${thumb(pid,64)}<div style="position:relative"><div class="rnm">${esc(x.n)}</div><div class="rsub">M/S, M.K. Leather</div></div></div>
 <p class="lb">আপনার রেটিং</p><div id="sr"></div>
@@ -625,12 +630,12 @@ async function rvImgs(inp){const fs=Array.from(inp.files||[]).slice(0,3-rv.imgs.
 function rvImgR(){$('#rimgs').innerHTML=rv.imgs.map((u,k)=>`<div class="rim"><img src="${u}"><button type="button" onclick="rv.imgs.splice(${k},1);rvImgR()">✕</button></div>`).join('');const a=$('#rad');if(a)a.style.display=rv.imgs.length>=3?'none':''}
 async function rvSave(){const e=$('#er');if(!rv.r){e.textContent='আগে স্টার দিয়ে রেটিং দিন।';return}
 $('#rsb').disabled=true;e.textContent='';
-try{await db.collection('reviews').doc(user.uid+'_'+rv.pid).set({pid:rv.pid,uid:user.uid,name:(prof&&prof.name)||user.displayName||'গ্রাহক',rating:rv.r,text:$('#rt').value.trim(),imgs:rv.imgs,createdAt:firebase.firestore.FieldValue.serverTimestamp()});
+try{await db.collection('reviews').doc(rv.docId).set({pid:rv.pid,oid:rv.oid||'',uid:user.uid,name:(prof&&prof.name)||user.displayName||'গ্রাহক',rating:rv.r,text:$('#rt').value.trim(),imgs:rv.imgs,createdAt:rv.created||firebase.firestore.FieldValue.serverTimestamp()});
 loadR();M(`<h3>ধন্যবাদ ✅</h3><p style="margin:10px 0">আপনার রিভিউ জমা হয়েছে।</p><button class="btn g" onclick="acc()">মাই অ্যাকাউন্টে ফিরুন</button>`)}
 catch(x){console.error(x);e.textContent=x&&x.code=='permission-denied'?'রিভিউ জমা হয়নি: Firebase-এ reviews কালেকশনের অনুমতি (rules) দেওয়া নেই।':'রিভিউ জমা হয়নি। আবার চেষ্টা করুন।';$('#rsb').disabled=false}}
 async function myRvM(){M('<h3>আমার রিভিউ</h3><p class="lb">লোড হচ্ছে...</p>');
-try{const s=await db.collection('reviews').where('uid','==',user.uid).get();const l=s.docs.map(d=>d.data()).sort((a,b)=>(b.createdAt?b.createdAt.seconds:0)-(a.createdAt?a.createdAt.seconds:0));
-M('<div class="bh"><button class="bkb" onclick="acc()">‹</button><h3>আমার রিভিউ</h3></div>'+(l.length?l.map(r=>{const x=P.find(a=>String(a.id)==String(r.pid));return `<div class="rv"><div class="rnm">${esc(x?x.n:'পণ্য')}</div>${stars(r.rating)}<div class="rvtx">${esc(r.text||'')}</div>${rvThumbs(r.imgs)}<div style="margin-top:8px"><span class="rlk" onclick="rvM('${esc(r.pid)}')">এডিট করুন ›</span></div></div>`}).join(''):'<p style="padding:14px 0">আপনি এখনো কোনো রিভিউ দেননি।</p>'))}
+try{const s=await db.collection('reviews').where('uid','==',user.uid).get();const l=s.docs.map(d=>({docId:d.id,...d.data()})).sort((a,b)=>(b.createdAt?b.createdAt.seconds:0)-(a.createdAt?a.createdAt.seconds:0));
+M('<div class="bh"><button class="bkb" onclick="acc()">‹</button><h3>আমার রিভিউ</h3></div>'+(l.length?l.map(r=>{const x=P.find(a=>String(a.id)==String(r.pid));return `<div class="rv"><div class="rnm">${esc(x?x.n:'পণ্য')}</div>${stars(r.rating)}<div class="rvtx">${esc(r.text||'')}</div>${rvThumbs(r.imgs)}<div style="margin-top:8px"><span class="rlk" onclick="rvM('${esc(r.pid)}',0,'${esc(r.oid||'')}','${esc(r.docId)}')">এডিট করুন ›</span></div></div>`}).join(''):'<p style="padding:14px 0">আপনি এখনো কোনো রিভিউ দেননি।</p>'))}
 catch(e){M('<h3>আমার রিভিউ</h3><p class="er">লোড করা যায়নি।</p>')}}
 function addrM(){const a=(prof&&prof.addr)||{};M(`<div class="bh"><button class="bkb" onclick="acc()">‹</button><h3>ঠিকানা</h3></div><div class="sec"><input class="f" id="ap" type="tel" placeholder="মোবাইল নম্বর" value="${esc(a.phone||'')}"><div class="two"><select class="f" id="ad"><option value="">জেলা বাছুন</option>${D.map(d=>`<option${d==a.district?' selected':''}>${d}</option>`).join('')}</select><input class="f" id="au" placeholder="থানা / উপজেলা" value="${esc(a.area||'')}"></div><textarea class="f" id="aa" rows="3" placeholder="পূর্ণ ঠিকানা">${esc(a.address||'')}</textarea></div><p class="er" id="er"></p><button class="btn g" onclick="saveAddr()">ঠিকানা সেভ করুন</button>`)}
 async function saveAddr(){const a={phone:g('ap'),district:g('ad'),area:g('au'),address:$('#aa').value.trim()};$('#er').className='er';if(!a.district||!a.address){err('জেলা ও পূর্ণ ঠিকানা দিন।');return}
@@ -661,7 +666,7 @@ let hoUn=null;
 function loadHO(){hoUn&&hoUn();hoUn=null;const w=$('#hoWrap'),l=$('#hol');if(!w)return;
 if(!user||!db){w.style.display='none';l.innerHTML='';return}
 hoUn=db.collection('orders').where('uid','==',user.uid).onSnapshot(sn=>{const a=sn.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(y.createdAt?y.createdAt.seconds:Infinity)-(x.createdAt?x.createdAt.seconds:Infinity));
-w.style.display=a.length?'block':'none';l.innerHTML=a.map(ordH).join('')},e=>console.error(e))}
+const act=a.filter(o=>{const t=AL[o.status]||o.status;return t!='ডেলিভারি সম্পন্ন'&&t!='বাতিল'});w.style.display=act.length?'block':'none';l.innerHTML=act.map(ordH).join('')},e=>console.error(e))}
 async function loadP(){try{const s=await db.collection('products').get(),l=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.active!==false);
 if(l.length)P=l.sort((a,b)=>(b.t||0)-(a.t||0)).map(x=>({...x,col:(x.col||[]).flatMap(c=>String(c).split(/[,،.।]/)).map(c=>c.trim()).filter(Boolean)}));
 const t=await db.collection('settings').doc('site').get();if(t.exists){ST={...ST,...t.data()};$('.hero h1').textContent=ST.title;$('.hero p').textContent=ST.sub}}catch(e){console.error(e)}render();loadR()}
@@ -681,20 +686,11 @@ var lg=document.querySelector('.top img');
 var bar=document.createElement('div');bar.id='ibar';
 bar.innerHTML='<img alt="" src="'+(lg?lg.src:'icon-192.png')+'"><div class="ibt"><b>M/S, M.K. Leather</b><small>অ্যাপ ইনস্টল করুন</small></div><button id="ibgo" type="button" aria-label="ইনস্টল"><svg viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="#1a1000" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M7 10l5 5 5-5M5 20h14"/></svg></button><button id="ibx" type="button" aria-label="বন্ধ করুন">✕</button>';
 document.body.appendChild(bar);
-bar.style.display='flex';
-addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e});
-function diag(){
- var L=['manifest.json','sw.js','icon-192.png','icon-512.png','icon-maskable-512.png'];
- Promise.all(L.map(function(f){return fetch(f+'?t='+Date.now(),{cache:'no-store'}).then(function(r){return r.ok}).catch(function(){return false})})).then(function(res){
-  var miss=[],lines=L.map(function(f,i){if(!res[i])miss.push(f);return (res[i]?'✅ ':'❌ ')+f}).join('<br>');
-  var hint=miss.length?'<b>'+miss.join(', ')+'</b> সাইটে পাওয়া যাচ্ছে না। এই ফাইলগুলো index.html-এর পাশে আপলোড করুন।':'ফাইল সব ঠিক আছে। অ্যাপটা সম্ভবত ফোনে আগে থেকেই ইনস্টল করা আছে। পুরোনোটা আনইনস্টল করে Chrome-এ পেজ রিলোড করে আবার চাপুন। না হলে Chrome-এর ⋮ মেনু থেকে "অ্যাপ ইনস্টল করুন" চাপুন।';
-  var d=document.createElement('div');d.style.cssText='position:fixed;inset:0;background:#000a;z-index:40;display:flex;align-items:center;justify-content:center;padding:16px';
-  d.innerHTML='<div style="background:#fffaf0;border:2px solid #d4a017;border-radius:16px;padding:18px;max-width:420px;width:100%;font:14px/1.6 system-ui,sans-serif;color:#3a2208"><div style="font-weight:700;margin-bottom:8px">ইনস্টল চেক</div>'+lines+'<p style="margin:10px 0">'+hint+'</p><button style="width:100%;padding:12px;border:0;border-radius:10px;background:#d4a017;font-weight:700">ঠিক আছে</button></div>';
-  d.onclick=function(e){if(e.target===d||e.target.tagName==='BUTTON')d.remove()};
-  document.body.appendChild(d)})}
+bar.style.display='none';
+addEventListener('beforeinstallprompt',function(e){e.preventDefault();dp=e;bar.style.display='flex'});
 document.getElementById('ibgo').onclick=function(){
  if(dp){dp.prompt();dp.userChoice.then(function(r){dp=null;if(r&&r.outcome==='accepted')bar.style.display='none'})}
- else diag()};
+ else bar.style.display='none'};
 document.getElementById('ibx').onclick=function(){bar.style.display='none'};
 addEventListener('appinstalled',function(){bar.style.display='none'});
 })();
