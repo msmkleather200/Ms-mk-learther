@@ -413,6 +413,7 @@ nav a.on{color:#f3c94a;background:rgba(243,201,74,.12);border-radius:14px}
 <div id="os" onclick="if(event.target==this)optX()"><div id="osb"></div></div>
 <div id="ov" onclick="if(event.target==this)closeM()"><div id="mb"></div></div>
 
+<script>window.addEventListener('error',function(e){if(!e.message)return;var d=document.getElementById('jserr');if(!d){d=document.createElement('div');d.id='jserr';d.style.cssText='position:fixed;left:8px;right:8px;top:8px;z-index:99;background:#fff;color:#b00;border:2px solid #b00;border-radius:10px;padding:8px;font:12px/1.4 monospace;word-break:break-all;max-height:40vh;overflow:auto';d.onclick=function(){d.remove()};document.body.appendChild(d)}d.textContent+=e.message+' (line '+e.lineno+')\n'});window.addEventListener('unhandledrejection',function(e){console.error(e.reason)});</script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
@@ -444,7 +445,7 @@ const imgsOf=x=>x&&x.imgs&&x.imgs.length?x.imgs:(x&&x.img?[x.img]:[]);
 const CE={"wallet": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"8\" y=\"16\" width=\"48\" height=\"34\" rx=\"6\"/><path d=\"M8 25h48\"/><rect x=\"38\" y=\"32\" width=\"18\" height=\"10\" rx=\"3\"/><circle cx=\"45\" cy=\"37\" r=\"1.6\" fill=\"currentColor\"/></svg>", "shoe": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M6 42V27c8 0 12-4 14-10l6 4c4 3 8 4 14 5 6 1 12 3 16 8v6a3 3 0 0 1-3 3H9a3 3 0 0 1-3-3z\"/><path d=\"M6 48h52\"/><path d=\"M24 26l4 4M31 28l4 4\"/></svg>", "bag": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M12 26h40l4 28H8z\"/><path d=\"M22 26v-6a10 10 0 0 1 20 0v6\"/><path d=\"M26 36h12\"/></svg>", "belt": "<svg viewBox=\"0 0 64 64\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"3\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><rect x=\"3\" y=\"26\" width=\"58\" height=\"12\" rx=\"3\"/><rect x=\"22\" y=\"19\" width=\"18\" height=\"26\" rx=\"3\"/><path d=\"M40 32h-9\"/><circle cx=\"49\" cy=\"32\" r=\"1.6\" fill=\"currentColor\"/><circle cx=\"55\" cy=\"32\" r=\"1.6\" fill=\"currentColor\"/></svg>"};const ic=x=>CE[x&&x.c]||CE.bag;
 const esc=t=>String(t==null?'':t).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const cardH=x=>`<div class="card" onclick="showP('${x.id}')"><div class="im">${imgsOf(x)[0]?`<img src="${imgsOf(x)[0]}">`:ic(x)}</div><div class="in"><div class="nm">${x.n}</div>${rlH(x)}<div class="pp"><b class="pr">৳${bn(x.p)}</b><s>৳${bn(x.o)}</s><span class="off">-${bn(Math.round(100-x.p*100/x.o))}%</span></div></div></div>`;
-function render(){const l=P.filter(x=>x.n.includes(q));
+function render(){const l=P.filter(x=>String(x.n||'').includes(q));
 $('#cats').innerHTML=C.filter(c=>c[0]!='all').map(([k,t])=>{const p=P.find(x=>x.c==k&&x.img);return `<div class="ct" onclick="catM('${k}')">${p?`<img src="${p.img}">`:`<i>${CE[k]}</i>`}<span>${t}</span></div>`}).join('');
 $('#grid').innerHTML=l.map(cardH).join('')||'<p style="padding:14px">কোনো পণ্য পাওয়া যায়নি।</p>'}
 function catM(k){const t=(C.find(c=>c[0]==k)||[])[1]||'',l=P.filter(x=>x.c==k);
@@ -659,8 +660,4 @@ function toast(t){let d=$('#tst');if(!d){d=document.createElement('div');d.id='t
 let hoUn=null;
 function loadHO(){hoUn&&hoUn();hoUn=null;const w=$('#hoWrap'),l=$('#hol');if(!w)return;
 if(!user||!db){w.style.display='none';l.innerHTML='';return}
-hoUn=db.collection('orders').where('uid','==',user.uid).onSnapshot(sn=>{const a=sn.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(y.createdAt?y.createdAt.seconds:Infinity)-(x.createdAt?x.createdAt.seconds:Infinity));
-w.style.display=a.length?'block':'none';l.innerHTML=a.map(ordH).join('')},e=>console.error(e))}
-async function loadP(){try{const s=await db.collection('products').get(),l=s.docs.map(d=>({id:d.id,...d.data()})).filter(x=>x.active!==false);
-if(l.length)P=l.sort((a,b)=>(b.t||0)-(a.t||0)).map(x=>({...x,col:(x.col||[]).flatMap(c=>String(c).split(/[,،.।]/)).map(c=>c.trim()).filter(Boolean)}));
-const t=await db.collection('settings').doc('site').get();if(t.exists){ST={...ST,...t.data()};$('.hero h1').textContent=ST.title;$('.hero p').textConte
+hoUn=db.collection('orders').where('uid','==',user.uid).onSnapshot(sn=>{const a=sn.docs.map(d=>({id:d.id,...d.data()})).sort((x,y)=>(y.createdAt?y.create
