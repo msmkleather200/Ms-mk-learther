@@ -8,8 +8,8 @@ body{font-family:"Noto Sans Bengali",system-ui,sans-serif;background:#f5f3f0;col
 header{background:#0a0a0a;color:#f3c94a;padding:12px 14px;border-bottom:2px solid #d4a017;display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;z-index:5}
 header button{background:none;border:1px solid #d4a017;color:#f3c94a;border-radius:6px;padding:5px 10px}
 main{max-width:760px;margin:0 auto;padding:12px}
-.tabs{display:flex;gap:6px;margin-bottom:12px}
-.tabs button{flex:1;padding:10px 4px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:14px}
+.tabs{display:flex;gap:6px;margin-bottom:12px;overflow-x:auto}
+.tabs button{flex:1 0 auto;white-space:nowrap;padding:10px 12px;border:1px solid #ccc;background:#fff;border-radius:8px;font-size:14px}
 .tabs button.on{background:#0a0a0a;color:#f3c94a;border-color:#0a0a0a}
 .c{background:#fff;border:1px solid #e3ddd4;border-radius:10px;padding:12px;margin-bottom:10px;font-size:14px;line-height:1.6}
 .rw{display:flex;justify-content:space-between;align-items:center;gap:8px}
@@ -59,8 +59,8 @@ auth.onAuthStateChanged(u=>{un&&un();$('#lo').style.display=u?'block':'none';
  if(!u)A.innerHTML='<div class="mid"><p style="margin-bottom:14px">অ্যাডমিন হিসেবে গুগল দিয়ে লগইন করুন।</p><button class="b g" onclick="auth.signInWithPopup(new firebase.auth.GoogleAuthProvider()).catch(e=>alert(e.message))">গুগল দিয়ে লগইন</button></div>';
  else if(!ADMINS.includes(u.email))A.innerHTML=`<div class="mid"><p><b>${E(u.email)}</b> অ্যাডমিন তালিকায় নেই। সঠিক গুগল অ্যাকাউন্ট দিয়ে লগইন করুন।</p></div>`;
  else shell()});
-function shell(){A.innerHTML='<div class="tabs"><button id="t1" onclick="tab(1)">অর্ডার</button><button id="t2" onclick="tab(2)">পণ্য</button><button id="t3" onclick="tab(3)">সাইট সেটিংস</button><button id="t4" onclick="tab(4)">চ্যাট</button></div><div id="v"></div>';tab(1)}
-function tab(n){un&&un();[1,2,3,4].forEach(i=>$('#t'+i).className=i==n?'on':'');[0,orders,prods,sets,chats][n]()}
+function shell(){A.innerHTML='<div class="tabs"><button id="t1" onclick="tab(1)">অর্ডার</button><button id="t2" onclick="tab(2)">পণ্য</button><button id="t3" onclick="tab(3)">সাইট সেটিংস</button><button id="t4" onclick="tab(4)">চ্যাট</button><button id="t5" onclick="tab(5)">ভাউচার</button></div><div id="v"></div>';tab(1)}
+function tab(n){un&&un();[1,2,3,4,5].forEach(i=>$('#t'+i).className=i==n?'on':'');[0,orders,prods,sets,chats,vouchers][n]()}
 
 /* অর্ডার */
 function orders(){$('#v').innerHTML='<div class="chips" id="fl"></div><div id="ol"></div>';db.collection('products').get().then(s=>{s.docs.forEach(d=>PM[d.id]=d.data().img||'');drawO()}).catch(()=>{});
@@ -115,6 +115,29 @@ const SEP={co:/[,،.।]/,sz:/[,،]/};
 function tgIn(k,el){if(SEP[k].test(el.value)){const a=el.value.split(SEP[k]);el.value=a.pop();a.forEach(t=>tgPush(k,t));tgD(k)}}
 function tgAdd(k){const el=$('#tgi_'+k);if(!el)return;tgPush(k,el.value);el.value='';tgD(k)}
 function tgRm(k,i){TG[k].splice(i,1);tgD(k)}
+
+/* ভাউচার */
+let VR=[];
+const vTxt=v=>v.type=='ship'?'ফ্রি ডেলিভারি':v.type=='pct'?v.value+'% ছাড়':'৳'+v.value+' ছাড়';
+const vSub=v=>(v.min?'সর্বনিম্ন কেনাকাটা ৳'+v.min:'কোনো সর্বনিম্ন সীমা নেই')+' · '+(v.exp?'মেয়াদ: '+v.exp:'মেয়াদ সীমা নেই')+(v.code?' · কোড: '+v.code:'');
+function vouchers(){$('#v').innerHTML='<button class="b g" onclick="vf()">+ নতুন ভাউচার</button><div id="vl" style="margin-top:10px"></div>';
+un=db.collection('vouchers').onSnapshot(s=>{VR=s.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.t||0)-(a.t||0));
+$('#vl').innerHTML=VR.map(v=>`<div class="c"><div class="rw"><b>${E(vTxt(v))}</b><span class="tag">${v.active===false?'লুকানো':'চালু'}</span></div><small>${E(vSub(v))}</small>
+<div class="bt"><button onclick="vf('${v.id}')">এডিট</button><button onclick="db.collection('vouchers').doc('${v.id}').update({active:${v.active===false}})">${v.active===false?'দেখান':'লুকান'}</button><button class="no" onclick="confirm('ভাউচারটি মুছবেন?')&&db.collection('vouchers').doc('${v.id}').delete()">মুছুন</button></div></div>`).join('')||'<p class="mid">এখনো কোনো ভাউচার নেই। "নতুন ভাউচার" চাপুন।</p>'},e=>$('#vl').textContent='লোড হয়নি: '+e.message+' (Firebase rules-এ vouchers যোগ করেছেন?)')}
+function vf(id){const v=VR.find(x=>x.id==id)||{type:'amt'},o=(k,t)=>`<option value="${k}" ${v.type==k?'selected':''}>${t}</option>`;
+M(`<h3>${id?'ভাউচার এডিট':'নতুন ভাউচার'}</h3>
+<label>ধরন</label><select id="vt" onchange="vTg()">${o('amt','টাকা ছাড় (৳)')}${o('pct','শতাংশ ছাড় (%)')}${o('ship','ফ্রি ডেলিভারি')}</select>
+<div id="vvw"><label id="vvl">ছাড়ের পরিমাণ</label><input id="vv" type="number" min="0" value="${v.value||''}"></div>
+<label>সর্বনিম্ন কেনাকাটা (৳, না থাকলে ফাঁকা)</label><input id="vm" type="number" min="0" value="${v.min||''}">
+<label>মেয়াদ শেষের তারিখ (না থাকলে ফাঁকা)</label><input id="ve" type="date" value="${E(v.exp||'')}">
+<label>ভাউচার কোড (ঐচ্ছিক)</label><input id="vc" value="${E(v.code||'')}" placeholder="যেমন: MK100">
+<label><input type="checkbox" id="va" ${v.active===false?'':'checked'}> সাইটে দেখান</label>
+<div class="bt"><button class="b g" onclick="vs('${id||''}')">সেভ করুন</button><button class="b" onclick="closeM()">বাতিল</button></div>`);vTg()}
+function vTg(){const t=$('#vt').value;$('#vvw').style.display=t=='ship'?'none':'block';$('#vvl').textContent=t=='pct'?'ছাড়ের শতাংশ (১ থেকে ১০০)':'ছাড়ের পরিমাণ (৳)'}
+async function vs(id){const t=g('vt'),val=+g('vv')||0;
+if(t!='ship'&&(val<=0||(t=='pct'&&val>100))){alert(t=='pct'?'১ থেকে ১০০-এর মধ্যে শতাংশ দিন।':'ছাড়ের পরিমাণ দিন।');return}
+const o={type:t,value:t=='ship'?0:val,min:+g('vm')||0,exp:g('ve'),code:g('vc').toUpperCase(),active:$('#va').checked};
+try{id?await db.collection('vouchers').doc(id).update(o):await db.collection('vouchers').add({...o,t:Date.now()});closeM()}catch(e){alert('সেভ হয়নি: '+e.message)}}
 
 /* সাইট সেটিংস */
 async function sets(){$('#v').innerHTML='<div class="c">লোড হচ্ছে...</div>';
