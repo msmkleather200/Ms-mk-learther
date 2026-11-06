@@ -465,7 +465,15 @@ $('#grid').innerHTML=l.map(cardH).join('')||'<p style="padding:14px">কোন�
 function catM(k){const t=(C.find(c=>c[0]==k)||[])[1]||'',l=P.filter(x=>x.c==k);
 M(`<h3>${t}</h3><div class="pg">${l.map(cardH).join('')||'<p style="padding:14px 0">এই ক্যাটাগরিতে এখনো পণ্য নেই।</p>'}</div>`)}
 let chatUn=null;
-function M(h){$('#ov').classList.remove('pp','pp2');if(chatUn){chatUn();chatUn=null}$('#mb').innerHTML='<button class="x" onclick="closeM()">✕</button>'+h;$('#ov').style.display='block';document.body.style.overflow='hidden'}
+function gbar(t,back){const n=cart.reduce((s,i)=>s+i.qty,0);return `<div class="pbar"><button class="pb1" onclick="${back}" aria-label="ফিরে যান">${BCK}</button><div class="pbs tt"><b>${t}</b></div><button class="pb1" onclick="cartM()" aria-label="কার্ট">${CRT}<span class="pcn" style="display:${n?'block':'none'}">${bn(n)}</span></button></div>`}
+function M(h){$('#ov').classList.remove('pp','pp2');if(chatUn){chatUn();chatUn=null}
+let bar='';if(h.indexOf('<div class="pbar">')!==0){let back='closeM()',t='';
+const m=h.match(/<div class="bh">(?:<button[^>]*?onclick="([^"]*)"[^>]*>[^<]*<\/button>)?<h3>([\s\S]*?)<\/h3><\/div>/);
+if(m){back=m[1]||'closeM()';t=m[2];h=h.replace(m[0],'')}
+else{const x=h.match(/<h3[^>]*>([\s\S]*?)<\/h3>/);if(x){t=x[1];h=h.replace(x[0],'')}}
+t=t.replace(/<[^>]*>/g,'').replace(/^[^\p{L}\p{N}]+/u,'').trim()||'M/S, M.K. Leather';bar=gbar(t,back)}
+$('#ov').classList.add('pp2');
+$('#mb').innerHTML='<button class="x" onclick="closeM()">✕</button>'+bar+h;$('#ov').style.display='block';document.body.style.overflow='hidden'}
 function closeM(){if(chatUn){chatUn();chatUn=null}$('#ov').style.display='none';document.body.style.overflow=''}
 function ui(){const n=cart.reduce((s,i)=>s+i.qty,0);document.querySelectorAll('.pcn').forEach(b=>{b.textContent=bn(n);b.style.display=n?'block':'none'});$('#cn').textContent=bn(n);$('#cn').style.display=n?'block':'none'}
 function save(){try{localStorage.setItem('mkcart',JSON.stringify(cart))}catch(e){}ui()}
