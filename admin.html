@@ -65,6 +65,7 @@ function tab(n){un&&un();[1,2,3,4,5].forEach(i=>$('#t'+i).className=i==n?'on':''
 /* অর্ডার */
 function orders(){$('#v').innerHTML='<div class="chips" id="fl"></div><div id="ol"></div>';db.collection('products').get().then(s=>{s.docs.forEach(d=>PM[d.id]=d.data().img||'');drawO()}).catch(()=>{});
 un=db.collection('orders').orderBy('createdAt','desc').onSnapshot(s=>{OR=s.docs.map(d=>({id:d.id,...d.data()}));drawO()},e=>$('#ol').textContent=e.message)}
+const vL=o=>{const v=o.voucher;return v?(v.type=='ship'?'ফ্রি ডেলিভারি':v.type=='pct'?v.value+'% ছাড়':'৳'+v.value+' ছাড়'):''};
 function drawO(){if(!$('#fl'))return;const l=OR.filter(o=>flt=='সব'||o.status==flt);
 $('#fl').innerHTML=['সব',...S].map(s=>`<button class="${s==flt?'on':''}" onclick="flt='${s}';drawO()">${s}${s=='সব'?'':' ('+OR.filter(o=>o.status==s).length+')'}</button>`).join('');
 $('#ol').innerHTML=l.map(o=>`<div class="c"><div class="rw"><b>#${E(o.id.slice(0,8).toUpperCase())}</b><span class="tag">${E(o.status)}</span></div>
@@ -72,6 +73,7 @@ $('#ol').innerHTML=l.map(o=>`<div class="c"><div class="rw"><b>#${E(o.id.slice(0
 <div>${E(o.name)} · <a href="tel:${E(o.phone)}">${E(o.phone)}</a><br><small>${E(o.email)}</small></div>
 <div>${E(o.district)}, ${E(o.area)}<br>${E(o.address)}</div>
 <div class="it">${(o.items||[]).map(i=>{const u=i.th||PM[i.id];return `<div class="rw" style="justify-content:flex-start;gap:10px;margin:6px 0">${u?`<img class="th" style="width:64px;height:64px;cursor:zoom-in" src="${E(u)}" onclick="bigO('${E(i.id)}',this.src)">`:'<div class="th" style="width:64px;height:64px">ছবি নেই</div>'}<div>${E(i.n)}<br><small>${E(i.col)}${i.sz?', সাইজ '+E(i.sz):''} × ${E(i.qty)} · ৳${E(i.p)}</small></div></div>`}).join('')}</div>
+${o.discount>0?`<div class="it">পণ্যের দাম ৳${E(o.subtotal)}<br>ভাউচার ছাড় −৳${E(o.discount)} <small>(${E(vL(o))})</small><br>ডেলিভারি চার্জ ৳${E(o.delivery)}</div>`:''}
 <b>মোট ৳${E(o.total)}</b> <small>(ডেলিভারি ৳${E(o.delivery)} সহ, ${o.payment=='cod'?'ক্যাশ অন ডেলিভারি':E(o.payment)})</small>
 <div class="bt"><button class="ok" onclick="st('${o.id}','কনফার্মড')">কনফার্ম</button><select onchange="st('${o.id}',this.value)">${S.map(s=>`<option ${s==o.status?'selected':''}>${s}</option>`).join('')}</select><button class="no" onclick="st('${o.id}','বাতিল')">বাতিল</button><button onclick="delO('${o.id}')">মুছুন</button></div></div>`).join('')||'<p class="mid">কোনো অর্ডার নেই।</p>'}
 const bigO=(id,src)=>M(`<img src="${E(PM[id]||src)}" style="width:100%;border-radius:8px"><div class="bt"><button class="b" onclick="closeM()">বন্ধ করুন</button></div>`);
